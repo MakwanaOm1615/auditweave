@@ -111,7 +111,7 @@ def generate_audit_pdf(audit_data: dict, company_name: str, industry: str, audit
     story = []
     
     # --- PAGE 1: COVER PAGE / EXECUTIVE HEADER ---
-    story.append(Paragraph("PolicyLens AI", ParagraphStyle('Brand', parent=c_styles['title'], fontSize=14, textColor=colors.HexColor('#0F172A'), spaceAfter=5)))
+    story.append(Paragraph("AuditWeave AI", ParagraphStyle('Brand', parent=c_styles['title'], fontSize=14, textColor=colors.HexColor('#0F172A'), spaceAfter=5)))
     story.append(Paragraph("DPDP Compliance Intelligence Platform", ParagraphStyle('BrandTag', parent=c_styles['subtitle'], fontSize=9, textColor=colors.HexColor('#0284C7'), spaceAfter=30)))
     
     story.append(Spacer(1, 20))
@@ -309,7 +309,7 @@ def generate_comparison_pdf(compare_data: dict, company_a: dict, company_b: dict
     story = []
     
     # Header Brand
-    story.append(Paragraph("PolicyLens AI", ParagraphStyle('BrandComp', parent=c_styles['title'], fontSize=12, textColor=colors.HexColor('#0F172A'), spaceAfter=5)))
+    story.append(Paragraph("AuditWeave AI", ParagraphStyle('BrandComp', parent=c_styles['title'], fontSize=12, textColor=colors.HexColor('#0F172A'), spaceAfter=5)))
     story.append(Spacer(1, 10))
     
     # Title
@@ -385,7 +385,7 @@ def generate_comparison_pdf(compare_data: dict, company_a: dict, company_b: dict
     story.append(Spacer(1, 20))
     story.append(Paragraph("5. Appendix & Disclaimers", c_styles['h1']))
     story.append(Paragraph(
-        "This GRC comparison report is rendered by PolicyLens AI's hybrid validation engine based on India's DPDP Act 2023. "
+        "This GRC comparison report is rendered by AuditWeave AI's hybrid validation engine based on India's DPDP Act 2023. "
         "It provides a structural audit comparison and does not constitute formal legal counsel. For regulatory implementation plans, "
         "consult qualified data privacy attorneys.",
         ParagraphStyle('DisclaimerComp', parent=c_styles['body'], fontSize=8, leading=11, textColor=colors.HexColor('#64748B'))

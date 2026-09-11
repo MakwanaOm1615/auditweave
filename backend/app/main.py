@@ -63,11 +63,11 @@ def startup_populate_benchmarks():
                 db.add(db_bench)
                 
         # Populate an admin user if not present
-        existing_admin = db.query(User).filter(User.email == "admin@policylens.ai").first()
+        existing_admin = db.query(User).filter(User.email == "admin@AuditWeave.ai").first()
         if not existing_admin:
             admin_user = User(
-                email="admin@policylens.ai",
-                password_hash=get_password_hash("policylens_admin_2026"),
+                email="admin@AuditWeave.ai",
+                password_hash=get_password_hash("AuditWeave_admin_2026"),
                 role="admin"
             )
             db.add(admin_user)
@@ -790,7 +790,7 @@ def audit_copilot(request: CopilotRequest, db: Session = Depends(get_db)):
     findings_str = "\n".join(findings_summary)
     
     system_prompt = f"""
-    You are 'PolicyLens Copilot' - an interactive compliance assistant.
+    You are 'AuditWeave Copilot' - an interactive compliance assistant.
     You have access to a completed DPDP Act 2023 compliance audit for the company '{company.name}' ({company.industry}).
     Here are the audit details:
     Compliance Score: {audit.compliance_score}/100
@@ -836,7 +836,7 @@ def audit_copilot(request: CopilotRequest, db: Session = Depends(get_db)):
         )
     else:
         reply = (
-            f"Hello! I am your PolicyLens Copilot. **{company.name}** scored **{audit.compliance_score}/100** in our audit. "
+            f"Hello! I am your AuditWeave Copilot. **{company.name}** scored **{audit.compliance_score}/100** in our audit. "
             f"The primary issues are centered on **{audit.findings[0].pillar if audit.findings else 'Consent'}**. "
             "Would you like me to draft specific compliant text for your notice, or explain the penalties associated with these findings?"
         )
@@ -859,7 +859,7 @@ def audit_rewrite(request: RewriteRequest, db: Session = Depends(get_db)):
     original = request.clause_text if request.clause_text else (finding.evidence_extract or "Consent is implied by using the site.")
     
     system_prompt = f"""
-    You are 'PolicyLens Rewrite AI'.
+    You are 'AuditWeave Rewrite AI'.
     We found a DPDP Act 2023 compliance gap:
     Pillar: {finding.pillar}
     Issue: {finding.issue}

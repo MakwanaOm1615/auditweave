@@ -467,7 +467,7 @@ export default function AuditDetailsPage() {
                   className={`flex flex-col ${chat.sender === "user" ? "items-end" : "items-start"}`}
                 >
                   <span className="text-[9px] text-slate-500 mb-1">
-                    {chat.sender === "user" ? "YOU" : "POLICYLENS AI"}
+                    {chat.sender === "user" ? "YOU" : "AUDITWEAVE AI"}
                   </span>
                   <div
                     className={`p-3 rounded-2xl max-w-[85%] leading-relaxed ${

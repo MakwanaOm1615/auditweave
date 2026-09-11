@@ -14,7 +14,7 @@ from ..services.report_generator import generate_report_pdf
 
 # Initialize FastAPI
 app = FastAPI(
-    title="PolicyLens AI - Legal Compliance Engine",
+    title="AuditWeave AI - Legal Compliance Engine",
     description="Zero-database compliance engine for India's DPDP Act 2023",
     version="2.0.0"
 )

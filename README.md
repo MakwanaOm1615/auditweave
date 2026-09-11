@@ -1,6 +1,6 @@
-# 🛡️ PolicyLens AI — Enterprise Data Protection & GRC Compliance Auditor
+# 🛡️ AuditWeave AI — Enterprise Data Protection & GRC Compliance Auditor
 
-**PolicyLens AI** is a state-of-the-art Governance, Risk, and Compliance (GRC) platform designed to perform automated, explainable compliance audits of enterprise privacy policies against India's statutory **Digital Personal Data Protection (DPDP) Act 2023**.
+**AuditWeave AI** is a state-of-the-art Governance, Risk, and Compliance (GRC) platform designed to perform automated, explainable compliance audits of enterprise privacy policies against India's statutory **Digital Personal Data Protection (DPDP) Act 2023**.
 
 ---
 
@@ -41,7 +41,7 @@
 - **Language**: Python 3.11+
 - **Framework**: [FastAPI](https://fastapi.tiangolo.com/) (Asynchronous ASGI Web Framework)
 - **ASGI Server**: [Uvicorn](https://www.uvicorn.org/)
-- **Database ORM**: [SQLAlchemy](https://www.sqlalchemy.org/) + SQLite (`policylens.db`)
+- **Database ORM**: [SQLAlchemy](https://www.sqlalchemy.org/) + SQLite (`AuditWeave.db`)
 - **Data Validation**: [Pydantic v2](https://docs.pydantic.dev/)
 
 ### **Text Extraction & Web Scraping Pipeline**
@@ -81,7 +81,7 @@
 ## 📂 Project Directory Structure
 
 ```
-PolicyLens - AI/
+AuditWeave - AI/
 ├── backend/
 │   ├── app/
 │   │   ├── api/                  # Extra routing modules
@@ -100,7 +100,7 @@ PolicyLens - AI/
 │   │   ├── main.py               # FastAPI App & Endpoints
 │   │   ├── models.py             # SQLAlchemy Database Models
 │   │   └── schemas.py            # Pydantic Schemas
-│   ├── policylens.db             # SQLite Database File
+│   ├── AuditWeave.db             # SQLite Database File
 │   ├── requirements.txt          # Python Dependencies
 │   └── venv/                     # Python Virtual Environment
 │
@@ -136,8 +136,8 @@ PolicyLens - AI/
 
 ### Step 1: Clone the Repository
 ```bash
-git clone https://github.com/your-username/policylens-ai.git
-cd policylens-ai
+git clone https://github.com/your-username/AuditWeave-ai.git
+cd AuditWeave-ai
 ```
 
 ---
@@ -169,7 +169,7 @@ cd policylens-ai
 4. Create a `.env` file inside `backend/` (optional for Gemini API key):
    ```env
    GEMINI_API_KEY=your_gemini_api_key_here
-   DATABASE_URL=sqlite:///./policylens.db
+   DATABASE_URL=sqlite:///./AuditWeave.db
    SECRET_KEY=your_jwt_secret_key_here
    ```
 

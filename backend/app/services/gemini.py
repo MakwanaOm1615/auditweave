@@ -214,7 +214,7 @@ def mock_audit_generation(company_name: str, industry: str, policy_text: str, ru
             f["evidence_end_index"] = -1
 
     overall_summary = (
-        f"PolicyLens AI completed a comprehensive GRC assessment of {company_name}'s privacy policy under the DPDP Act 2023. "
+        f"AuditWeave AI completed a comprehensive GRC assessment of {company_name}'s privacy policy under the DPDP Act 2023. "
         f"The document scored {ai_compliance_score}/100, indicating a status of '{status}'. "
         f"We identified {passed_count} compliant pillars and {total_rules - passed_count} compliance gaps. "
         f"The primary risks center on "

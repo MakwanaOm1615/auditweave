@@ -8,7 +8,7 @@ import { login } from "@/lib/api";
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("admin@auditweave.ai");
-  const [password, setPassword] = useState("policylens_admin_2026");
+  const [password, setPassword] = useState("AuditWeave_admin_2026");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -19,9 +19,9 @@ export default function LoginPage() {
 
     try {
       const data = await login(email, password);
-      localStorage.setItem("policylens_token", data.access_token);
-      localStorage.setItem("policylens_user_email", data.email || email);
-      localStorage.setItem("policylens_user_role", data.role || "user");
+      localStorage.setItem("AuditWeave_token", data.access_token);
+      localStorage.setItem("AuditWeave_user_email", data.email || email);
+      localStorage.setItem("AuditWeave_user_role", data.role || "user");
       
       router.push("/dashboard");
     } catch (err: any) {
@@ -118,7 +118,7 @@ export default function LoginPage() {
                 Email: <code className="text-slate-200">admin@auditweave.ai</code>
               </p>
               <p className="text-xs text-slate-400">
-                Password: <code className="text-slate-200">policylens_admin_2026</code>
+                Password: <code className="text-slate-200">AuditWeave_admin_2026</code>
               </p>
             </div>
           </div>

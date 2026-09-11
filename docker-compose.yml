@@ -8,8 +8,8 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - JWT_SECRET=policylens_docker_secret_key_2026_jwt_token_secure
-      - DATABASE_URL=sqlite:///./policylens.db
+      - JWT_SECRET=AuditWeave_docker_secret_key_2026_jwt_token_secure
+      - DATABASE_URL=sqlite:///./AuditWeave.db
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
     volumes:
       - backend-db:/app

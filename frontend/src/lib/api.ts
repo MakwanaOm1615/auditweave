@@ -71,7 +71,7 @@ function handleClientSideMockFallback<T>(endpoint: string, options: RequestInit)
     return {
       access_token: "mock_jwt_token_for_preview",
       token_type: "bearer",
-      role: body.email === "admin@policylens.ai" ? "admin" : "user",
+      role: body.email === "admin@AuditWeave.ai" ? "admin" : "user",
       email: body.email
     } as unknown as T;
   }
@@ -162,7 +162,7 @@ function handleClientSideMockFallback<T>(endpoint: string, options: RequestInit)
 
   if (endpoint.includes("/audit/copilot")) {
     return {
-      response: "Hello! I am your PolicyLens AI Compliance Copilot. Based on this audit, the company's highest risk area is Children's Data Protection, due to a missing age-verification control. Under Section 9, fiduciaries must establish verifiable consent and block tracking. You can fix this finding by implementing front-end age gating and adding a clear child restriction clause.",
+      response: "Hello! I am your AuditWeave AI Compliance Copilot. Based on this audit, the company's highest risk area is Children's Data Protection, due to a missing age-verification control. Under Section 9, fiduciaries must establish verifiable consent and block tracking. You can fix this finding by implementing front-end age gating and adding a clear child restriction clause.",
       suggested_actions: ["Explain Section 9 Penalties", "Draft a child restriction clause", "View technical steps for age gating"]
     } as unknown as T;
   }
@@ -215,7 +215,7 @@ function generateMockAuditDetails(id: number) {
     compliance_score: score,
     risk_score: roundVal(100.0 - score),
     status: score >= 80 ? "Excellent" : (score >= 70 ? "Good" : "Moderate Risk"),
-    overall_summary: `PolicyLens AI completed a comprehensive GRC compliance audit for ${name}. The privacy policy was parsed against India's DPDP Act 2023. Gaps in Consent granularity and Grievance Officer contacts require immediate remediation.`,
+    overall_summary: `AuditWeave AI completed a comprehensive GRC compliance audit for ${name}. The privacy policy was parsed against India's DPDP Act 2023. Gaps in Consent granularity and Grievance Officer contacts require immediate remediation.`,
     ai_confidence_score: 0.96,
     rules_passed_count: score >= 80 ? 8 : (score >= 70 ? 7 : 6),
     rules_failed_count: score >= 80 ? 1 : (score >= 70 ? 2 : 3),

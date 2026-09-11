@@ -80,10 +80,10 @@ async def get_current_user_optional(token: Optional[str] = Depends(oauth2_scheme
             pass
 
     # Seamless fallback to default guest user
-    guest_user = db.query(User).filter(User.email == "guest@policylens.ai").first()
+    guest_user = db.query(User).filter(User.email == "guest@AuditWeave.ai").first()
     if not guest_user:
         guest_user = User(
-            email="guest@policylens.ai",
+            email="guest@AuditWeave.ai",
             password_hash=get_password_hash("guest_auditor_pass_2026"),
             role="user"
         )

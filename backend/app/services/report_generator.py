@@ -110,7 +110,7 @@ def generate_report_pdf(audit_data: dict) -> bytes:
     story = []
     
     # Header Brand
-    story.append(Paragraph("PolicyLens AI", ParagraphStyle('Brand', parent=c_styles['title'], fontSize=12, textColor=colors.HexColor('#0F172A'), spaceAfter=2)))
+    story.append(Paragraph("AuditWeave AI", ParagraphStyle('Brand', parent=c_styles['title'], fontSize=12, textColor=colors.HexColor('#0F172A'), spaceAfter=2)))
     story.append(Paragraph("DPDP Compliance Intelligence Platform", ParagraphStyle('BrandTag', parent=c_styles['subtitle'], fontSize=8, textColor=colors.HexColor('#0284C7'), spaceAfter=15)))
     
     story.append(Spacer(1, 10))
@@ -150,7 +150,7 @@ def generate_report_pdf(audit_data: dict) -> bytes:
     status_label = audit_data["status"]
     
     summary_text = (
-        f"PolicyLens AI completed a comprehensive GRC compliance audit for {company_name}. "
+        f"AuditWeave AI completed a comprehensive GRC compliance audit for {company_name}. "
         f"The privacy policy was parsed and analyzed against India's DPDP Act 2023. "
         f"The document received a score of <b>{score}/100</b>, indicating a <b>{status_label}</b> posture. "
         f"The analysis assessed 11 critical legal compliance pillars. The system identified "
@@ -263,7 +263,7 @@ def generate_report_pdf(audit_data: dict) -> bytes:
     story.append(Spacer(1, 15))
     story.append(Paragraph("4. Statutory Appendix & GRC Disclaimer", c_styles['h1']))
     story.append(Paragraph(
-        "This audit report is generated automatically by PolicyLens AI's hybrid compliance engine. "
+        "This audit report is generated automatically by AuditWeave AI's hybrid compliance engine. "
         "Every score and finding is mapped and grounded in retrieved excerpts of the Digital Personal Data Protection Act, 2023. "
         "This report is for GRC information purposes and does not constitute formal legal advice. "
         "Please consult a certified data protection attorney in India for regulatory filings.",

@@ -12,7 +12,7 @@ if os.path.exists(env_path):
                 key, val = line.split("=", 1)
                 os.environ[key.strip()] = val.strip().strip('"').strip("'")
 
-DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./policylens.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./AuditWeave.db")
 
 # Use connect_args={"check_same_thread": False} only for SQLite
 if DATABASE_URL.startswith("sqlite"):
