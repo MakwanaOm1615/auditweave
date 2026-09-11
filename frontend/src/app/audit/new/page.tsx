@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
-import { Shield, Globe, FileText, Upload, Sparkles, Terminal, CheckCircle2, Loader2, Play } from "lucide-react";
+import { Shield, Globe, FileText, Upload, Sparkles, Terminal, CheckCircle2, Loader2, Play, ChevronDown } from "lucide-react";
 import { createAudit, createAuditWithFile } from "@/lib/api";
 
 export default function NewAuditPage() {
@@ -19,6 +19,19 @@ export default function NewAuditPage() {
   const [auditing, setAuditing] = useState(false);
   const [error, setError] = useState("");
   const [currentStep, setCurrentStep] = useState(0);
+
+  const [isIndustryOpen, setIsIndustryOpen] = useState(false);
+  const industryRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (industryRef.current && !industryRef.current.contains(event.target as Node)) {
+        setIsIndustryOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   // 40+ Enterprise industry sectors
   const industriesList = [
@@ -151,15 +164,30 @@ export default function NewAuditPage() {
               <label className="text-xs font-bold text-brand-deep/70 uppercase tracking-wider block">
                 Industry Sector
               </label>
-              <select
-                value={industry}
-                onChange={(e) => setIndustry(e.target.value)}
-                className="w-full px-4 py-3 bg-white border border-brand-deep/20 rounded-xl text-sm focus:outline-none focus:border-brand-green focus:ring-2 focus:ring-brand-green/20 text-brand-deep transition-all font-medium shadow-sm"
-              >
-                {industriesList.map((ind) => (
-                  <option key={ind} value={ind}>{ind}</option>
-                ))}
-              </select>
+              <div className="relative w-full" ref={industryRef}>
+                <div 
+                  className={`w-full px-4 py-3 bg-white border rounded-xl text-sm cursor-pointer flex justify-between items-center transition-all font-medium shadow-sm ${isIndustryOpen ? 'border-brand-green ring-2 ring-brand-green/20 text-brand-deep' : 'border-brand-deep/20 text-brand-deep hover:border-brand-deep/40'}`}
+                  onClick={() => setIsIndustryOpen(!isIndustryOpen)}
+                >
+                  <span className="truncate">{industry}</span>
+                  <ChevronDown className={`h-4 w-4 text-brand-deep/60 transition-transform duration-200 shrink-0 ${isIndustryOpen ? 'rotate-180' : ''}`} />
+                </div>
+                
+                {isIndustryOpen && (
+                  <div className="absolute z-20 w-full mt-2 bg-white border border-brand-green/20 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] py-2 overflow-hidden max-h-64 overflow-y-auto">
+                    {industriesList.map((ind) => (
+                      <div
+                        key={ind}
+                        className={`px-4 py-2.5 cursor-pointer text-sm transition-colors truncate ${industry === ind ? 'bg-brand-green/10 text-brand-green font-bold' : 'hover:bg-brand-cream text-brand-deep/90 font-medium'}`}
+                        onClick={() => { setIndustry(ind); setIsIndustryOpen(false); }}
+                        title={ind}
+                      >
+                        {ind}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 

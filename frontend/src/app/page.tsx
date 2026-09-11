@@ -27,10 +27,16 @@ export default function LandingPage() {
         </div>
         <div className="flex items-center space-x-4">
           <Link
-            href="/audit/new"
-            className="text-sm font-semibold text-brand-deep hover:text-brand-green uppercase tracking-wider px-5 py-2.5 border border-brand-deep/20 rounded-lg hover:bg-white/50 transition bg-white/30 backdrop-blur-sm shadow-sm"
+            href="/login"
+            className="text-sm font-bold text-brand-deep hover:text-brand-green uppercase tracking-wider transition px-2"
           >
-            Go to Auditor
+            Log In
+          </Link>
+          <Link
+            href="/register"
+            className="text-sm font-bold text-white bg-brand-green hover:bg-[#2e745e] uppercase tracking-wider px-6 py-2.5 rounded-lg shadow-sm shadow-brand-green/20 transition"
+          >
+            Sign Up
           </Link>
         </div>
       </nav>

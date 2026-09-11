@@ -3,14 +3,16 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Shield, ArrowRight, Loader2, ArrowLeft } from "lucide-react";
-import { login } from "@/lib/api";
+import { ArrowRight, Loader2, ArrowLeft } from "lucide-react";
+import { register } from "@/lib/api";
 import { AuthSidebar } from "../components/AuthSidebar";
 
-export default function LoginPage() {
+export default function RegisterPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@auditweave.ai");
-  const [password, setPassword] = useState("AuditWeave_admin_2026");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
@@ -27,10 +29,10 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      await login(email, password);
-      router.push("/dashboard");
+      await register(email, password);
+      router.push("/login");
     } catch (err: any) {
-      setError(err.message || "Failed to sign in. Please verify your credentials.");
+      setError(err.message || "Failed to create account. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -53,18 +55,18 @@ export default function LoginPage() {
           <ArrowRight className="h-4 w-4" />
         </Link>
 
-        <div className="w-full max-w-[420px] mx-auto flex flex-col justify-center h-full pt-4">
+        <div className="w-full max-w-[440px] mx-auto flex flex-col justify-center h-full pt-4">
           
           {/* Header */}
-          <div className="mb-8">
+          <div className="mb-10">
             <p className="text-[13px] text-brand-deep/70 font-medium mb-1">
               Welcome to <span className="font-bold text-brand-deep">AuditWeave</span>
             </p>
             <h2 className="text-[3rem] font-extrabold text-brand-deep mb-2 tracking-tight leading-[1.1] font-sans">
-              Welcome back
+              Create your account
             </h2>
             <p className="text-[14.5px] text-brand-deep/70 font-medium">
-              Enter your email to receive a secure login code
+              Get started with AI-powered compliance management
             </p>
           </div>
 
@@ -75,9 +77,39 @@ export default function LoginPage() {
               </div>
             )}
 
+            {/* Name Fields Row */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <label className="text-[13.5px] font-bold text-brand-deep block">
+                  First name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  className="w-full px-4 h-[52px] bg-white border border-brand-deep/10 rounded-[8px] text-[15px] focus:outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green text-brand-deep transition-all placeholder:text-brand-deep/40 shadow-[0_1px_2px_rgba(13,58,53,0.02)]"
+                  placeholder="John"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[13.5px] font-bold text-brand-deep block">
+                  Last name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  className="w-full px-4 h-[52px] bg-white border border-brand-deep/10 rounded-[8px] text-[15px] focus:outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green text-brand-deep transition-all placeholder:text-brand-deep/40 shadow-[0_1px_2px_rgba(13,58,53,0.02)]"
+                  placeholder="Doe"
+                />
+              </div>
+            </div>
+
             <div className="space-y-2">
               <label className="text-[13.5px] font-bold text-brand-deep block">
-                Email address
+                Work email address
               </label>
               <input
                 type="email"
@@ -113,43 +145,40 @@ export default function LoginPage() {
               {loading ? (
                 <>
                   <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>{showPassword ? "Authenticating..." : "Sending code..."}</span>
+                  <span>{showPassword ? "Creating Account..." : "Processing..."}</span>
                 </>
               ) : (
                 <>
-                  <span>{showPassword ? "Log In" : "Continue with Email"}</span>
+                  <span>{showPassword ? "Create Account" : "Continue with Email"}</span>
                   <ArrowRight className="h-[18px] w-[18px]" />
                 </>
               )}
             </button>
           </form>
 
-          {/* Links */}
-          <div className="mt-8 text-center space-y-6">
-            <button
-              onClick={() => setShowPassword(!showPassword)}
-              className="text-[14px] font-bold text-brand-green hover:text-brand-deep transition-colors"
-            >
-              {showPassword ? "Log in with email instead" : "Log in with password instead"}
-            </button>
-            
-            <p className="text-[13.5px] font-medium text-brand-deep/70">
-              Don't have an account?{" "}
-              <Link href="/register" className="font-bold text-brand-deep hover:underline">
-                Sign up
-              </Link>
+          {/* Footer Text */}
+          <div className="mt-8 text-center">
+            <p className="text-[12.5px] text-brand-deep/70 leading-[1.6] font-medium">
+              By creating an account you agree to our{" "}
+              <Link href="/docs/terms" className="font-bold border-b border-brand-deep/20 text-brand-deep hover:text-brand-green hover:border-brand-green transition-colors pb-[1px]">
+                Terms of Service
+              </Link>{" "}
+              and{" "}
+              <Link href="/docs/privacy" className="font-bold border-b border-brand-deep/20 text-brand-deep hover:text-brand-green hover:border-brand-green transition-colors pb-[1px]">
+                Privacy Policy
+              </Link>.
             </p>
           </div>
 
-          {/* Footer Box */}
-          {!showPassword && (
-            <div className="mt-12 bg-brand-deep/5 rounded-[10px] p-4 flex items-start space-x-3 border border-brand-deep/10">
-              <Shield className="h-[18px] w-[18px] text-brand-green mt-0.5 shrink-0" />
-              <p className="text-[12px] text-brand-deep/70 leading-[1.6] font-medium">
-                We'll send a secure one-time code to your email. No passwords needed.
-              </p>
-            </div>
-          )}
+          {/* Links */}
+          <div className="mt-10 text-center">
+            <p className="text-[13.5px] font-medium text-brand-deep/70">
+              Already have an account?{" "}
+              <Link href="/login" className="font-bold text-brand-deep hover:underline">
+                Log in
+              </Link>
+            </p>
+          </div>
         </div>
       </div>
     </div>

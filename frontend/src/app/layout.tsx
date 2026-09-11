@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { usePathname } from "next/navigation";
-import { Shield, User, Layers, History, Crown } from "lucide-react";
-import { isAdmin } from "@/lib/api";
+import { usePathname, useRouter } from "next/navigation";
+import { Shield, User, Layers, History, Crown, LogOut } from "lucide-react";
+import { isAdmin, isAuthenticated, logoutUser } from "@/lib/api";
 import "./globals.css";
 
 export default function RootLayout({
@@ -13,11 +13,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [admin, setAdmin] = useState(false);
+  const [isAuth, setIsAuth] = useState(false);
 
   useEffect(() => {
     setAdmin(isAdmin());
-  }, [pathname]);
+    setIsAuth(isAuthenticated());
+    
+    // Route protection
+    const publicPaths = ["/", "/login", "/register"];
+    if (!publicPaths.includes(pathname) && !isAuthenticated()) {
+      router.push("/login");
+    }
+  }, [pathname, router]);
+
+  const handleLogout = () => {
+    logoutUser();
+    setIsAuth(false);
+    setAdmin(false);
+    router.push("/login");
+  };
 
   const navLinks = [
     { href: "/audit/new", label: "Compliance Auditor", icon: Shield },
@@ -27,10 +43,13 @@ export default function RootLayout({
     ...(admin ? [{ href: "/admin", label: "Admin Console", icon: Crown }] : []),
   ];
 
+  const hideHeaderPaths = ["/", "/login", "/register"];
+  const shouldShowHeader = !hideHeaderPaths.includes(pathname);
+
   return (
     <html lang="en">
       <body className="min-h-screen bg-brand-cream text-brand-deep antialiased flex flex-col">
-        {pathname !== "/" && pathname !== "/login" && (
+        {shouldShowHeader && (
           <header className="h-16 border-b border-brand-deep/10 bg-white/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-50">
             <div className="flex items-center space-x-8">
               <Link href="/" className="flex items-center space-x-3">
@@ -73,9 +92,16 @@ export default function RootLayout({
                 <span className="h-1 w-1 rounded-full bg-brand-laurel"></span>
                 <span className="text-brand-green font-semibold flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>Active</span>
               </div>
-              <div className="text-[10px] font-bold text-brand-laurel uppercase tracking-wider">
+              <div className="text-[10px] font-bold text-brand-laurel uppercase tracking-wider mr-2">
                 Powered by Axoreon
               </div>
+              <button 
+                onClick={handleLogout}
+                className="p-2 text-brand-deep/60 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all border border-transparent hover:border-red-100"
+                title="Sign Out"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
             </div>
           </header>
         )}

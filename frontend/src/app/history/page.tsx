@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Link from "next/link";
 import { getAuditHistory, deleteAudit } from "@/lib/api";
 import { 
   History, Search, Filter, Shield, AlertTriangle, CheckCircle2, 
-  ArrowUpRight, Download, Building2, Calendar, FileText, Loader2, Sparkles, Trash2
+  ArrowUpRight, Download, Building2, Calendar, FileText, Loader2, Sparkles, Trash2, ChevronDown
 } from "lucide-react";
 
 export default function HistoryPage() {
@@ -15,6 +15,24 @@ export default function HistoryPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
+
+  const [isIndustryOpen, setIsIndustryOpen] = useState(false);
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const industryRef = useRef<HTMLDivElement>(null);
+  const statusRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (industryRef.current && !industryRef.current.contains(event.target as Node)) {
+        setIsIndustryOpen(false);
+      }
+      if (statusRef.current && !statusRef.current.contains(event.target as Node)) {
+        setIsStatusOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
     async function fetchHistory() {
@@ -154,31 +172,76 @@ export default function HistoryPage() {
           />
         </div>
 
-        <div className="flex items-center space-x-3 w-full md:w-auto">
-          <div className="flex items-center space-x-2 bg-brand-cream/30 border border-brand-green/30 px-3 py-1.5 rounded-lg text-xs">
-            <Filter className="h-3.5 w-3.5 text-brand-deep/60" />
-            <select
-              value={selectedIndustry}
-              onChange={(e) => setSelectedIndustry(e.target.value)}
-              className="bg-transparent text-brand-deep focus:outline-none cursor-pointer"
+        <div className="flex flex-col md:flex-row items-center gap-3 w-full md:w-auto">
+          {/* Industry Custom Dropdown */}
+          <div className="relative w-full md:w-auto" ref={industryRef}>
+            <div 
+              className={`flex items-center justify-between space-x-2 bg-brand-cream/30 border px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${isIndustryOpen ? 'border-brand-green ring-1 ring-brand-green' : 'border-brand-green/30 hover:border-brand-green/60'}`}
+              onClick={() => setIsIndustryOpen(!isIndustryOpen)}
             >
-              <option value="ALL">All Industries</option>
-              {industries.map((ind: string) => (
-                <option key={ind} value={ind} className="bg-white text-brand-deep">{ind}</option>
-              ))}
-            </select>
+              <div className="flex items-center space-x-2">
+                <Filter className="h-3.5 w-3.5 text-brand-deep/60" />
+                <span className="text-brand-deep whitespace-nowrap">{selectedIndustry === "ALL" ? "All Industries" : selectedIndustry}</span>
+              </div>
+              <ChevronDown className={`h-3.5 w-3.5 text-brand-deep/50 transition-transform duration-200 ${isIndustryOpen ? 'rotate-180' : ''}`} />
+            </div>
+            
+            {isIndustryOpen && (
+              <div className="absolute z-20 w-full min-w-[160px] right-0 mt-1.5 bg-white border border-brand-green/20 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] py-1.5 overflow-hidden max-h-60 overflow-y-auto">
+                <div
+                  className={`px-3.5 py-2 cursor-pointer text-xs transition-colors ${selectedIndustry === "ALL" ? 'bg-brand-green/10 text-brand-green font-medium' : 'hover:bg-brand-cream/50 text-brand-deep/80'}`}
+                  onClick={() => { setSelectedIndustry("ALL"); setIsIndustryOpen(false); }}
+                >
+                  All Industries
+                </div>
+                {industries.map((ind: string) => (
+                  <div
+                    key={ind}
+                    className={`px-3.5 py-2 cursor-pointer text-xs transition-colors truncate ${selectedIndustry === ind ? 'bg-brand-green/10 text-brand-green font-medium' : 'hover:bg-brand-cream/50 text-brand-deep/80'}`}
+                    onClick={() => { setSelectedIndustry(ind); setIsIndustryOpen(false); }}
+                    title={ind}
+                  >
+                    {ind}
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          <div className="flex items-center space-x-2 bg-brand-cream/30 border border-brand-green/30 px-3 py-1.5 rounded-lg text-xs">
-            <select
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-              className="bg-transparent text-brand-deep focus:outline-none cursor-pointer"
+          {/* Status Custom Dropdown */}
+          <div className="relative w-full md:w-auto" ref={statusRef}>
+            <div 
+              className={`flex items-center justify-between space-x-2 bg-brand-cream/30 border px-3 py-1.5 rounded-lg text-xs cursor-pointer transition-colors ${isStatusOpen ? 'border-brand-green ring-1 ring-brand-green' : 'border-brand-green/30 hover:border-brand-green/60'}`}
+              onClick={() => setIsStatusOpen(!isStatusOpen)}
             >
-              <option value="ALL">All Statuses</option>
-              <option value="Risk" className="bg-white text-brand-deep">Risk Flagged</option>
-              <option value="Compliant" className="bg-white text-brand-deep">Compliant</option>
-            </select>
+              <span className="text-brand-deep whitespace-nowrap">
+                {selectedStatus === "ALL" ? "All Statuses" : selectedStatus === "Risk" ? "Risk Flagged" : "Compliant"}
+              </span>
+              <ChevronDown className={`h-3.5 w-3.5 text-brand-deep/50 transition-transform duration-200 ${isStatusOpen ? 'rotate-180' : ''}`} />
+            </div>
+            
+            {isStatusOpen && (
+              <div className="absolute z-20 w-full min-w-[140px] right-0 mt-1.5 bg-white border border-brand-green/20 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.08)] py-1.5 overflow-hidden">
+                <div
+                  className={`px-3.5 py-2 cursor-pointer text-xs transition-colors ${selectedStatus === "ALL" ? 'bg-brand-green/10 text-brand-green font-medium' : 'hover:bg-brand-cream/50 text-brand-deep/80'}`}
+                  onClick={() => { setSelectedStatus("ALL"); setIsStatusOpen(false); }}
+                >
+                  All Statuses
+                </div>
+                <div
+                  className={`px-3.5 py-2 cursor-pointer text-xs transition-colors ${selectedStatus === "Risk" ? 'bg-brand-green/10 text-brand-green font-medium' : 'hover:bg-brand-cream/50 text-brand-deep/80'}`}
+                  onClick={() => { setSelectedStatus("Risk"); setIsStatusOpen(false); }}
+                >
+                  Risk Flagged
+                </div>
+                <div
+                  className={`px-3.5 py-2 cursor-pointer text-xs transition-colors ${selectedStatus === "Compliant" ? 'bg-brand-green/10 text-brand-green font-medium' : 'hover:bg-brand-cream/50 text-brand-deep/80'}`}
+                  onClick={() => { setSelectedStatus("Compliant"); setIsStatusOpen(false); }}
+                >
+                  Compliant
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </div>

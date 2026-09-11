@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { createBatchAudit, createAuditWithFile } from "@/lib/api";
 import { 
   Layers, Plus, Trash2, Shield, Globe, FileText, Upload, Sparkles, 
-  CheckCircle2, XCircle, Trophy, ArrowUpRight, Download, Loader2, AlertCircle, Building2
+  CheckCircle2, XCircle, Trophy, ArrowUpRight, Download, Loader2, AlertCircle, Building2, ChevronDown
 } from "lucide-react";
 
 interface CompanyEntry {
@@ -48,6 +48,18 @@ export default function BatchAuditPage() {
   const [scanStep, setScanStep] = useState(0);
   const [batchResults, setBatchResults] = useState<any | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      const target = event.target as HTMLElement;
+      if (!target.closest('.industry-dropdown')) {
+        setOpenDropdownId(null);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const addCompany = () => {
     const newId = String(companies.length + 1);
@@ -206,15 +218,33 @@ export default function BatchAuditPage() {
 
                     <div>
                       <label className="block text-xs font-semibold text-brand-deep/80 mb-1.5">Industry Sector</label>
-                      <select
-                        value={company.industry}
-                        onChange={(e) => updateCompany(company.id, "industry", e.target.value)}
-                        className="w-full px-3.5 py-2 bg-white border border-brand-green/30 rounded-lg text-sm text-brand-deep focus:outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green cursor-pointer"
-                      >
-                        {INDUSTRIES.map(ind => (
-                          <option key={ind} value={ind} className="bg-white text-brand-deep">{ind}</option>
-                        ))}
-                      </select>
+                      <div className="relative industry-dropdown">
+                        <div 
+                          className={`w-full px-3.5 py-2 bg-white border rounded-lg text-sm cursor-pointer flex justify-between items-center transition-all ${openDropdownId === company.id ? 'border-brand-green ring-1 ring-brand-green text-brand-deep' : 'border-brand-green/30 text-brand-deep hover:border-brand-green/60'}`}
+                          onClick={() => setOpenDropdownId(openDropdownId === company.id ? null : company.id)}
+                        >
+                          <span className="truncate">{company.industry}</span>
+                          <ChevronDown className={`h-4 w-4 text-brand-deep/60 transition-transform duration-200 shrink-0 ${openDropdownId === company.id ? 'rotate-180' : ''}`} />
+                        </div>
+                        
+                        {openDropdownId === company.id && (
+                          <div className="absolute z-20 w-full mt-1.5 bg-white border border-brand-green/20 rounded-xl shadow-[0_8px_30px_rgb(0,0,0,0.12)] py-1.5 overflow-hidden max-h-60 overflow-y-auto">
+                            {INDUSTRIES.map(ind => (
+                              <div
+                                key={ind}
+                                className={`px-3.5 py-2 cursor-pointer text-sm transition-colors truncate ${company.industry === ind ? 'bg-brand-green/10 text-brand-green font-bold' : 'hover:bg-brand-cream text-brand-deep/90 font-medium'}`}
+                                onClick={() => { 
+                                  updateCompany(company.id, "industry", ind);
+                                  setOpenDropdownId(null);
+                                }}
+                                title={ind}
+                              >
+                                {ind}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
 
