@@ -1,22 +1,32 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+@theme {
+  --color-brand-deep: #0D3A35;
+  --color-brand-green: #276152;
+  --color-brand-laurel: #B1B7AB;
+  --color-brand-cream: #FBF6F0;
+  
+  --color-background: var(--color-brand-cream);
+  --color-foreground: var(--color-brand-deep);
+}
+
 :root {
-  --background: #0D3A35;
-  --foreground: #FBF6F0;
-  --card-bg: rgba(19, 46, 42, 0.65);
-  --card-border: rgba(251, 246, 240, 0.08);
-  --primary: #276152;
-  --primary-hover: #327b69;
-  --primary-glow: rgba(39, 97, 82, 0.25);
-  --accent: #B1B7AB;
+  --background: var(--color-brand-cream);
+  --foreground: var(--color-brand-deep);
+  --card-bg: #ffffff;
+  --card-border: rgba(13, 58, 53, 0.08);
+  --primary: var(--color-brand-green);
+  --primary-hover: #1f4f42;
+  --primary-glow: rgba(39, 97, 82, 0.15);
+  --accent: var(--color-brand-laurel);
   --success: #3F9C7E;
   --success-glow: rgba(63, 156, 126, 0.15);
   --warning: #D9A441;
   --warning-glow: rgba(217, 164, 65, 0.15);
   --danger: #C1503F;
   --danger-glow: rgba(193, 80, 63, 0.15);
-  --neutral-gray: #B1B7AB;
+  --neutral-gray: #71717a;
 }
 
 body {
@@ -38,13 +48,13 @@ h1, h2, h3, h4, h5, h6 {
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--card-border);
-  box-shadow: 0 10px 40px 0 rgba(0, 0, 0, 0.6);
+  box-shadow: 0 4px 20px 0 rgba(13, 58, 53, 0.05);
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .glass-card:hover {
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 16px 50px 0 rgba(0, 0, 0, 0.8);
+  border-color: rgba(13, 58, 53, 0.15);
+  box-shadow: 0 8px 30px 0 rgba(13, 58, 53, 0.1);
   transform: translateY(-2px);
 }
 
@@ -89,16 +99,16 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-track {
-  background: #0D3A35;
+  background: var(--color-brand-cream);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1F2937;
+  background: var(--color-brand-laurel);
   border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: var(--color-brand-green);
 }
 
 /* Custom GRC Utilities & Animations */

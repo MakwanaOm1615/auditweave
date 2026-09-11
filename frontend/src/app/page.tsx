@@ -5,23 +5,31 @@ import { Shield, Sparkles, ArrowRight, CheckCircle2, AlertTriangle, FileLock2, A
 
 export default function LandingPage() {
   return (
-    <div className="relative min-h-screen bg-[#0D3A35] text-slate-100 overflow-hidden flex flex-col justify-between">
+    <div className="relative min-h-screen bg-brand-cream text-brand-deep overflow-hidden flex flex-col justify-between">
       {/* Background Gradients */}
-      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-emerald-600/5 rounded-full filter blur-[100px] pointer-events-none" />
-      <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-emerald-500/5 rounded-full filter blur-[120px] pointer-events-none" />
+      <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-brand-green/5 rounded-full filter blur-[100px] pointer-events-none" />
+      <div className="absolute bottom-0 right-1/4 w-[600px] h-[600px] bg-brand-laurel/20 rounded-full filter blur-[120px] pointer-events-none" />
 
       {/* Top Navbar */}
-      <nav className="h-20 max-w-7xl mx-auto w-full px-6 flex items-center justify-between border-b border-slate-900/60 z-10">
-        <div className="flex items-center space-x-3">
-          <Shield className="h-8 w-8 text-emerald-300 glow-primary" />
-          <span className="font-extrabold text-xl tracking-wider text-slate-100">
-            AuditWeave <span className="text-emerald-300">AI</span>
-          </span>
+      <nav className="h-20 max-w-7xl mx-auto w-full px-6 flex items-center justify-between border-b border-brand-deep/10 z-10 relative">
+        <div className="flex items-center space-x-8">
+          <Link href="/" className="flex items-center space-x-2">
+            <span className="font-extrabold text-xl tracking-wide text-brand-deep font-sans">
+              AXOREAN
+            </span>
+            <span className="text-brand-laurel text-lg">|</span>
+            <div className="flex items-center space-x-1">
+              <Shield className="h-5 w-5 text-brand-green" />
+              <span className="font-semibold text-sm tracking-wide text-brand-green font-sans">
+                AuditWeave
+              </span>
+            </div>
+          </Link>
         </div>
         <div className="flex items-center space-x-4">
           <Link
             href="/audit/new"
-            className="text-xs font-semibold text-slate-400 hover:text-white uppercase tracking-wider px-4 py-2 border border-slate-800 rounded-lg hover:bg-slate-900/60 transition"
+            className="text-sm font-semibold text-brand-deep hover:text-brand-green uppercase tracking-wider px-5 py-2.5 border border-brand-deep/20 rounded-lg hover:bg-white/50 transition bg-white/30 backdrop-blur-sm shadow-sm"
           >
             Go to Auditor
           </Link>
@@ -29,23 +37,23 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero Section */}
-      <main className="max-w-7xl mx-auto px-6 py-16 md:py-24 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center flex-1 z-10 w-full">
+      <main className="max-w-7xl mx-auto px-6 py-16 md:py-24 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center flex-1 z-10 w-full relative">
         {/* Left text column */}
         <div className="lg:col-span-7 space-y-8">
-          <div className="inline-flex items-center space-x-2 bg-emerald-600/10 border border-emerald-300/20 px-3.5 py-2 rounded-full text-xs font-semibold text-emerald-300">
+          <div className="inline-flex items-center space-x-2 bg-brand-green/10 border border-brand-green/20 px-4 py-2 rounded-full text-xs font-semibold text-brand-green">
             <Sparkles className="h-4 w-4" />
             <span>AI-GRC Compliance Engine for DPDP Act 2023</span>
           </div>
           
-          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+          <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-tight text-brand-deep">
             India's AI-Powered <br className="hidden sm:inline" />
-            <span className="bg-gradient-to-r from-emerald-300 to-emerald-400 bg-clip-text text-transparent">
+            <span className="text-brand-green">
               DPDP Compliance
             </span> <br />
             Intelligence Platform.
           </h1>
           
-          <p className="text-sm sm:text-base text-slate-400 leading-relaxed max-w-xl">
+          <p className="text-sm sm:text-base text-brand-deep/70 leading-relaxed max-w-xl font-medium">
             Audit privacy policies, identify structural compliance gaps, evaluate regulatory liabilities, and generate executive-ready GRC reports. Built on a hybrid deterministic rule engine and Gemini AI.
           </p>
 
@@ -53,93 +61,93 @@ export default function LandingPage() {
           <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 pt-4">
             <Link
               href="/audit/new"
-              className="flex items-center justify-center space-x-2 text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-300 hover:to-indigo-500 px-8 py-4 rounded-xl border border-emerald-300/20 shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/25 transition-all duration-300 cursor-pointer"
+              className="flex items-center justify-center space-x-2 text-sm font-bold text-white bg-brand-green hover:bg-[#1f4f42] px-8 py-4 rounded-xl shadow-lg shadow-brand-green/20 transition-all duration-300 cursor-pointer"
             >
               <span>Initialize GRC Audit</span>
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link
               href="/contact"
-              className="flex items-center justify-center space-x-2 text-sm font-bold text-slate-300 hover:text-white bg-slate-900/60 border border-slate-800/80 hover:bg-slate-850 px-8 py-4 rounded-xl transition-all cursor-pointer"
+              className="flex items-center justify-center space-x-2 text-sm font-bold text-brand-deep hover:text-brand-green bg-white border border-brand-deep/10 hover:bg-brand-cream px-8 py-4 rounded-xl shadow-sm transition-all cursor-pointer"
             >
               <span>Contact & Support</span>
             </Link>
           </div>
 
           {/* Trust statistics row */}
-          <div className="grid grid-cols-3 gap-6 pt-8 border-t border-slate-900 max-w-lg">
+          <div className="grid grid-cols-3 gap-6 pt-8 border-t border-brand-deep/10 max-w-lg">
             <div>
-              <p className="text-2xl font-bold text-white">40+</p>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">Rule Checks</p>
+              <p className="text-3xl font-bold text-brand-deep">40+</p>
+              <p className="text-[10px] text-brand-laurel font-bold uppercase tracking-wider mt-1">Rule Checks</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-emerald-300">96%</p>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">AI Confidence</p>
+              <p className="text-3xl font-bold text-brand-green">96%</p>
+              <p className="text-[10px] text-brand-laurel font-bold uppercase tracking-wider mt-1">AI Confidence</p>
             </div>
             <div>
-              <p className="text-2xl font-bold text-emerald-400">100%</p>
-              <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">DPDP Mapped</p>
+              <p className="text-3xl font-bold text-[#3F9C7E]">100%</p>
+              <p className="text-[10px] text-brand-laurel font-bold uppercase tracking-wider mt-1">DPDP Mapped</p>
             </div>
           </div>
         </div>
 
         {/* Right mockup column wrapped in Conic Glowing Border */}
         <div className="lg:col-span-5 relative">
-          <div className="absolute inset-0 bg-emerald-600/5 rounded-2xl filter blur-3xl pointer-events-none" />
+          <div className="absolute inset-0 bg-brand-green/5 rounded-2xl filter blur-3xl pointer-events-none" />
           
-          <div className="animated-border p-[1px] glow-primary">
-            <div className="bg-[#080d1a] border border-slate-900 rounded-xl p-6 overflow-hidden">
+          <div className="p-[1px] rounded-2xl bg-gradient-to-b from-brand-deep/10 to-brand-cream shadow-xl">
+            <div className="bg-white rounded-2xl p-6 overflow-hidden">
               {/* Top window bar */}
-              <div className="flex items-center justify-between pb-4 border-b border-slate-800/60 mb-6">
+              <div className="flex items-center justify-between pb-4 border-b border-brand-deep/5 mb-6">
                 <div className="flex items-center space-x-2">
-                  <span className="h-3 w-3 rounded-full bg-red-500/70" />
-                  <span className="h-3 w-3 rounded-full bg-yellow-500/70" />
-                  <span className="h-3 w-3 rounded-full bg-green-500/70" />
+                  <span className="h-3 w-3 rounded-full bg-red-400" />
+                  <span className="h-3 w-3 rounded-full bg-yellow-400" />
+                  <span className="h-3 w-3 rounded-full bg-green-400" />
                 </div>
-                <span className="text-[10px] text-slate-500 font-mono">console.auditweave.ai</span>
+                <span className="text-[10px] text-brand-laurel font-mono">console.axorean.com/auditweave</span>
               </div>
 
               {/* Simulated Live Score Card */}
               <div className="space-y-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-[10px] text-slate-400 font-mono">AUDITED ENTITY</p>
-                    <p className="text-base font-bold text-slate-100">Paytm Core Services</p>
+                    <p className="text-[10px] text-brand-laurel font-mono font-bold">AUDITED ENTITY</p>
+                    <p className="text-base font-bold text-brand-deep">Paytm Core Services</p>
                   </div>
-                  <div className="h-14 w-14 rounded-full border-4 border-emerald-500 flex items-center justify-center bg-emerald-950/20 text-emerald-400 font-bold text-lg glow-success">
+                  <div className="h-14 w-14 rounded-full border-[3px] border-brand-green flex items-center justify-center bg-brand-green/5 text-brand-green font-bold text-lg">
                     79
                   </div>
                 </div>
 
-                <div className="border border-slate-850 rounded-xl p-4 bg-slate-950/40 space-y-3">
+                <div className="border border-brand-deep/5 rounded-xl p-4 bg-brand-cream/50 space-y-3">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">DPDP Notice Compliance</span>
-                    <span className="text-emerald-400 font-semibold">🟢 PASS (92%)</span>
+                    <span className="text-brand-deep/70 font-medium">DPDP Notice Compliance</span>
+                    <span className="text-brand-green font-bold">PASS (92%)</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Children's Data Restrictions</span>
-                    <span className="text-red-400 font-semibold">🔴 FAIL (20%)</span>
+                    <span className="text-brand-deep/70 font-medium">Children's Data Restrictions</span>
+                    <span className="text-red-500 font-bold">FAIL (20%)</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-slate-400">Grievance Redressal</span>
-                    <span className="text-amber-400 font-semibold">🟡 WARNING (50%)</span>
+                    <span className="text-brand-deep/70 font-medium">Grievance Redressal</span>
+                    <span className="text-amber-500 font-bold">WARNING (50%)</span>
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <div className="flex justify-between text-[11px] text-slate-500 font-mono">
+                  <div className="flex justify-between text-[11px] text-brand-laurel font-mono font-bold">
                     <span>AI Legal Reasoning</span>
                     <span>96% Certainty</span>
                   </div>
-                  <div className="h-1.5 w-full bg-slate-900 rounded-full overflow-hidden">
-                    <div className="h-full w-[96%] bg-gradient-to-r from-emerald-300 to-emerald-400" />
+                  <div className="h-1.5 w-full bg-brand-cream rounded-full overflow-hidden">
+                    <div className="h-full w-[96%] bg-brand-green" />
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 text-xs bg-slate-950/50 p-3 rounded-lg border border-slate-850">
-                  <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
-                  <p className="text-slate-400 text-[11px] leading-tight">
-                    <span className="text-amber-400 font-semibold">Critical Vulnerability:</span> Missing age-gating mechanisms for users under 18. Penalties cap at ₹200 Crore.
+                <div className="flex items-start space-x-3 text-xs bg-red-50 p-3 rounded-lg border border-red-100">
+                  <AlertTriangle className="h-4 w-4 text-red-500 shrink-0 mt-0.5" />
+                  <p className="text-red-900 text-[11px] leading-relaxed">
+                    <span className="font-bold">Critical Vulnerability:</span> Missing age-gating mechanisms for users under 18. Penalties cap at ₹200 Crore.
                   </p>
                 </div>
               </div>
@@ -149,11 +157,11 @@ export default function LandingPage() {
       </main>
 
       {/* Core Pillars Feature Grid */}
-      <section className="bg-slate-950/20 border-t border-slate-900 py-16 w-full z-10">
+      <section className="bg-white border-t border-brand-deep/5 py-16 w-full z-10">
         <div className="max-w-7xl mx-auto px-6 space-y-12">
           <div className="text-center max-w-2xl mx-auto space-y-4">
-            <h2 className="text-2xl sm:text-3xl font-extrabold text-white">Full DPDP Alignment Modules</h2>
-            <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-brand-deep">Full DPDP Alignment Modules</h2>
+            <p className="text-xs sm:text-sm text-brand-deep/70 leading-relaxed font-medium">
               AuditWeave evaluates policies against the seven structural pillars mandated by the Indian Parliament in the DPDP Act 2023.
             </p>
           </div>
@@ -167,12 +175,12 @@ export default function LandingPage() {
             ].map((pillar, i) => {
               const Icon = pillar.icon;
               return (
-                <div key={i} className="glass-card rounded-xl p-5 border border-slate-900 hover:border-slate-850">
-                  <div className="h-10 w-10 rounded-lg bg-emerald-600/10 flex items-center justify-center text-emerald-300 mb-4">
-                    <Icon className="h-5 w-5" />
+                <div key={i} className="glass-card rounded-xl p-6 bg-white hover:bg-brand-cream/30 transition-colors">
+                  <div className="h-12 w-12 rounded-xl bg-brand-green/10 flex items-center justify-center text-brand-green mb-5">
+                    <Icon className="h-6 w-6" />
                   </div>
-                  <h3 className="text-sm sm:text-base font-bold text-slate-200 mb-2">{pillar.title}</h3>
-                  <p className="text-xs sm:text-sm text-slate-400 leading-relaxed">{pillar.text}</p>
+                  <h3 className="text-sm sm:text-base font-bold text-brand-deep mb-2">{pillar.title}</h3>
+                  <p className="text-xs sm:text-sm text-brand-deep/70 leading-relaxed">{pillar.text}</p>
                 </div>
               );
             })}
@@ -181,47 +189,55 @@ export default function LandingPage() {
       </section>
 
       {/* Footer with Enterprise Documentation Links */}
-      <footer className="border-t border-slate-900/60 bg-[#02050e] py-10 w-full z-10">
-        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-8 mb-8 text-xs text-slate-400">
-          <div className="md:col-span-5 space-y-3">
+      <footer className="border-t border-brand-deep/10 bg-brand-cream py-10 w-full z-10">
+        <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-8 mb-8 text-xs text-brand-deep/70">
+          <div className="md:col-span-5 space-y-4">
             <div className="flex items-center space-x-2">
-              <Shield className="h-5 w-5 text-emerald-300" />
-              <span className="font-extrabold text-sm text-slate-200 tracking-wider">AuditWeave</span>
+              <span className="font-extrabold text-sm tracking-wide text-brand-deep font-sans">
+                AXOREAN
+              </span>
+              <span className="text-brand-laurel">|</span>
+              <div className="flex items-center space-x-1">
+                <Shield className="h-4 w-4 text-brand-green" />
+                <span className="font-bold text-sm tracking-wide text-brand-green font-sans">
+                  AuditWeave
+                </span>
+              </div>
             </div>
-            <p className="leading-relaxed text-[11px] text-slate-500">
+            <p className="leading-relaxed text-[11px] text-brand-deep/60 max-w-xs font-medium">
               India's Digital Personal Data Protection (DPDP) Act 2023 compliance intelligence platform. Built for compliance officers, legal practitioners, and auditing teams.
             </p>
           </div>
           
-          <div className="md:col-span-3 space-y-3">
-            <p className="font-bold text-slate-300 uppercase tracking-wider text-[10px]">Compliance Docs</p>
-            <ul className="space-y-2">
-              <li><Link href="/docs/security" className="hover:text-white flex items-center gap-1.5"><KeyRound className="h-3.5 w-3.5" /> Security Policy</Link></li>
-              <li><Link href="/docs/privacy" className="hover:text-white flex items-center gap-1.5"><Shield className="h-3.5 w-3.5" /> Privacy Policy</Link></li>
+          <div className="md:col-span-3 space-y-4">
+            <p className="font-bold text-brand-deep uppercase tracking-wider text-[10px]">Compliance Docs</p>
+            <ul className="space-y-3 font-medium">
+              <li><Link href="/docs/security" className="hover:text-brand-green flex items-center gap-1.5"><KeyRound className="h-3.5 w-3.5" /> Security Policy</Link></li>
+              <li><Link href="/docs/privacy" className="hover:text-brand-green flex items-center gap-1.5"><Shield className="h-3.5 w-3.5" /> Privacy Policy</Link></li>
             </ul>
           </div>
 
-          <div className="md:col-span-2 space-y-3">
-            <p className="font-bold text-slate-300 uppercase tracking-wider text-[10px]">Integration</p>
-            <ul className="space-y-2">
-              <li><Link href="/docs/api" className="hover:text-white flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5" /> API Documentation</Link></li>
+          <div className="md:col-span-2 space-y-4">
+            <p className="font-bold text-brand-deep uppercase tracking-wider text-[10px]">Integration</p>
+            <ul className="space-y-3 font-medium">
+              <li><Link href="/docs/api" className="hover:text-brand-green flex items-center gap-1.5"><BookOpen className="h-3.5 w-3.5" /> API Documentation</Link></li>
             </ul>
           </div>
 
-          <div className="md:col-span-2 space-y-3">
-            <p className="font-bold text-slate-300 uppercase tracking-wider text-[10px]">Company</p>
-            <ul className="space-y-2">
-              <li><Link href="/contact" className="hover:text-white">Contact & Support</Link></li>
+          <div className="md:col-span-2 space-y-4">
+            <p className="font-bold text-brand-deep uppercase tracking-wider text-[10px]">Company</p>
+            <ul className="space-y-3 font-medium">
+              <li><Link href="/contact" className="hover:text-brand-green">Contact & Support</Link></li>
             </ul>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-6 border-t border-slate-900/60 pt-6 text-center text-xs text-slate-600 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p>© 2026 AuditWeave. Statutory auditing mapping under DPDP Act 2023.</p>
-          <div className="flex space-x-6">
-            <Link href="/docs/security" className="hover:text-slate-400">Security</Link>
-            <Link href="/docs/privacy" className="hover:text-slate-400">Privacy</Link>
-            <Link href="/contact" className="hover:text-slate-400">Contact</Link>
+        <div className="max-w-7xl mx-auto px-6 border-t border-brand-deep/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <p className="text-xs text-brand-laurel font-medium">© 2026 Axorean. Statutory auditing mapping under DPDP Act 2023.</p>
+          
+          <div className="flex items-center space-x-2 text-[10px] font-bold text-brand-laurel uppercase tracking-widest bg-brand-deep/5 px-4 py-2 rounded-full">
+            <span>Powered by</span>
+            <span className="text-brand-deep">AXOREAN</span>
           </div>
         </div>
       </footer>
