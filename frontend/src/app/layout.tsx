@@ -34,13 +34,13 @@ export default function RootLayout({
           <header className="h-16 border-b border-brand-deep/10 bg-white/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-50">
             <div className="flex items-center space-x-8">
               <Link href="/" className="flex items-center space-x-3">
-                <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-8 h-8 object-contain drop-shadow-sm" />
+                <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-md" />
                 <div className="flex flex-col justify-center">
-                  <span className="font-bold text-xl tracking-tight text-brand-deep leading-none" style={{ fontFamily: 'Georgia, serif' }}>
+                  <span className="font-extrabold text-2xl tracking-tighter text-brand-deep leading-none font-serif">
                     AuditWeave
                   </span>
-                  <span className="text-[10px] text-brand-laurel font-medium mt-1 leading-none">
-                    Powered by Axoreon
+                  <span className="text-[10px] text-brand-laurel font-bold mt-1 leading-none uppercase tracking-widest">
+                    POWERED BY AXOREON
                   </span>
                 </div>
               </Link>

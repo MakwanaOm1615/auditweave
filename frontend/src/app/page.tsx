@@ -14,13 +14,13 @@ export default function LandingPage() {
       <nav className="h-20 max-w-7xl mx-auto w-full px-6 flex items-center justify-between border-b border-brand-deep/10 z-10 relative">
         <div className="flex items-center space-x-8">
           <Link href="/" className="flex items-center space-x-3">
-            <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-8 h-8 object-contain drop-shadow-sm" />
+            <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-md" />
             <div className="flex flex-col justify-center">
-              <span className="font-bold text-xl tracking-tight text-brand-deep leading-none" style={{ fontFamily: 'Georgia, serif' }}>
+              <span className="font-extrabold text-2xl tracking-tighter text-brand-deep leading-none font-serif">
                 AuditWeave
               </span>
-              <span className="text-[10px] text-brand-laurel font-medium mt-1 leading-none">
-                Powered by Axoreon
+              <span className="text-[10px] text-brand-laurel font-bold mt-1 leading-none uppercase tracking-widest">
+                POWERED BY AXOREON
               </span>
             </div>
           </Link>
@@ -192,13 +192,13 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-8 mb-8 text-xs text-brand-deep/70">
           <div className="md:col-span-5 space-y-4">
             <div className="flex items-center space-x-3">
-              <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-6 h-6 object-contain drop-shadow-sm" />
+              <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-md" />
               <div className="flex flex-col justify-center">
-                <span className="font-bold text-lg tracking-tight text-brand-deep leading-none" style={{ fontFamily: 'Georgia, serif' }}>
+                <span className="font-extrabold text-xl tracking-tighter text-brand-deep leading-none font-serif">
                   AuditWeave
                 </span>
-                <span className="text-[9px] text-brand-laurel font-medium mt-1 leading-none">
-                  Powered by Axoreon
+                <span className="text-[9px] text-brand-laurel font-bold mt-1 leading-none uppercase tracking-widest">
+                  POWERED BY AXOREON
                 </span>
               </div>
             </div>
