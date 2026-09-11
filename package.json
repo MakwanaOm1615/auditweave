@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
-    "dev:backend": "cd backend && .\\venv\\Scripts\\python.exe AuditWeave.py",
+    "dev:backend": "cd backend && .\\venv\\Scripts\\python.exe main.py",
     "dev:frontend": "cd frontend && npm run dev",
     "install:all": "npm install && cd frontend && npm install && cd ../backend && .\\venv\\Scripts\\python.exe -m pip install -r requirements.txt"
   },
