@@ -116,10 +116,10 @@ export default function NewAuditPage() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-8 bg-[#0D3A35] min-h-screen">
+    <div className="p-6 max-w-4xl mx-auto space-y-8 min-h-screen">
       <div>
-        <h1 className="text-3xl font-extrabold text-white tracking-tight">Audit New Policy</h1>
-        <p className="text-sm text-slate-400 mt-1">
+        <h1 className="text-3xl font-extrabold text-brand-deep tracking-tight">Audit New Policy</h1>
+        <p className="text-sm text-brand-deep/70 mt-1 font-medium">
           Perform a hybrid compliance audit against India's DPDP Act 2023.
         </p>
       </div>
@@ -127,14 +127,14 @@ export default function NewAuditPage() {
       {!auditing ? (
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
-            <div className="bg-red-500/10 border border-red-500/30 p-3 rounded-lg text-xs text-red-400">
+            <div className="bg-red-50 border border-red-200 p-3 rounded-xl text-sm font-semibold text-red-600">
               {error}
             </div>
           )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+              <label className="text-xs font-bold text-brand-deep/70 uppercase tracking-wider block">
                 Company Name
               </label>
               <input
@@ -142,19 +142,19 @@ export default function NewAuditPage() {
                 value={companyName}
                 onChange={(e) => setCompanyName(e.target.value)}
                 placeholder="e.g. Swiggy"
-                className="w-full px-4 py-2.5 bg-slate-950/60 border border-slate-900 rounded-xl text-sm focus:outline-none focus:border-emerald-600 text-slate-100 placeholder-slate-600 transition"
+                className="w-full px-4 py-3 bg-white border border-brand-deep/20 rounded-xl text-sm focus:outline-none focus:border-brand-green focus:ring-2 focus:ring-brand-green/20 text-brand-deep placeholder-brand-deep/40 transition-all font-medium shadow-sm"
                 required
               />
             </div>
             
             <div className="space-y-2">
-              <label className="text-xs font-semibold text-slate-400 uppercase tracking-wider block">
+              <label className="text-xs font-bold text-brand-deep/70 uppercase tracking-wider block">
                 Industry Sector
               </label>
               <select
                 value={industry}
                 onChange={(e) => setIndustry(e.target.value)}
-                className="w-full px-4 py-2.5 bg-slate-950/60 border border-slate-900 rounded-xl text-sm focus:outline-none focus:border-emerald-600 text-slate-300 transition"
+                className="w-full px-4 py-3 bg-white border border-brand-deep/20 rounded-xl text-sm focus:outline-none focus:border-brand-green focus:ring-2 focus:ring-brand-green/20 text-brand-deep transition-all font-medium shadow-sm"
               >
                 {industriesList.map((ind) => (
                   <option key={ind} value={ind}>{ind}</option>
@@ -163,8 +163,8 @@ export default function NewAuditPage() {
             </div>
           </div>
 
-          <div className="glass-card rounded-2xl border border-slate-800/60 overflow-hidden">
-            <div className="flex border-b border-slate-800/60 bg-slate-950/30">
+          <div className="bg-white rounded-2xl border border-brand-deep/10 shadow-sm overflow-hidden">
+            <div className="flex border-b border-brand-deep/10 bg-brand-cream/50">
               {[
                 { id: "url", label: "Policy URL", icon: Globe },
                 { id: "text", label: "Paste Text", icon: FileText },
@@ -177,10 +177,10 @@ export default function NewAuditPage() {
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center space-x-2 px-6 py-4 text-xs font-semibold uppercase tracking-wider border-b-2 transition ${
+                    className={`flex items-center space-x-2 px-6 py-4 text-xs font-bold uppercase tracking-wider border-b-2 transition-all ${
                       active
-                        ? "border-emerald-600 text-emerald-300 bg-emerald-600/5"
-                        : "border-transparent text-slate-400 hover:text-slate-200"
+                        ? "border-brand-green text-brand-green bg-white"
+                        : "border-transparent text-brand-deep/60 hover:text-brand-deep hover:bg-brand-deep/5"
                     }`}
                   >
                     <Icon className="h-4 w-4" />
@@ -193,7 +193,7 @@ export default function NewAuditPage() {
             <div className="p-6">
               {activeTab === "url" && (
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-400 block">
+                  <label className="text-xs font-bold text-brand-deep/70 block">
                     Privacy Policy Web URL
                   </label>
                   <input
@@ -201,9 +201,9 @@ export default function NewAuditPage() {
                     value={policyUrl}
                     onChange={(e) => setPolicyUrl(e.target.value)}
                     placeholder="https://company.com/privacy"
-                    className="w-full px-4 py-2.5 bg-slate-950/40 border border-slate-900 rounded-xl text-sm focus:outline-none focus:border-emerald-600 text-slate-200 transition"
+                    className="w-full px-4 py-3 bg-white border border-brand-deep/20 rounded-xl text-sm focus:outline-none focus:border-brand-green focus:ring-2 focus:ring-brand-green/20 text-brand-deep transition-all font-medium shadow-sm"
                   />
-                  <p className="text-[10px] text-slate-500 mt-1">
+                  <p className="text-[10px] font-medium text-brand-deep/50 mt-1">
                     The platform automatically cleans navigation headers, menus, cookie overlays, and web footer content before auditing.
                   </p>
                 </div>
@@ -211,7 +211,7 @@ export default function NewAuditPage() {
 
               {activeTab === "text" && (
                 <div className="space-y-2">
-                  <label className="text-xs font-semibold text-slate-400 block">
+                  <label className="text-xs font-bold text-brand-deep/70 block">
                     Privacy Policy Text
                   </label>
                   <textarea
@@ -219,28 +219,28 @@ export default function NewAuditPage() {
                     onChange={(e) => setPolicyText(e.target.value)}
                     rows={10}
                     placeholder="Paste the full-text content of the privacy policy..."
-                    className="w-full p-4 bg-slate-950/40 border border-slate-900 rounded-xl text-xs focus:outline-none focus:border-emerald-600 text-slate-300 font-mono transition resize-y"
+                    className="w-full p-4 bg-white border border-brand-deep/20 rounded-xl text-xs focus:outline-none focus:border-brand-green focus:ring-2 focus:ring-brand-green/20 text-brand-deep font-mono transition-all resize-y shadow-sm"
                   />
                 </div>
               )}
 
               {activeTab === "file" && (
                 <div className="space-y-4">
-                  <label className="text-xs font-semibold text-slate-400 block">
+                  <label className="text-xs font-bold text-brand-deep/70 block">
                     Upload Privacy Policy Document (PDF / DOCX)
                   </label>
-                  <div className="border border-dashed border-slate-800/80 rounded-2xl p-8 flex flex-col items-center justify-center bg-slate-950/20 text-center hover:bg-slate-950/40 transition relative cursor-pointer">
+                  <div className="border-2 border-dashed border-brand-deep/20 rounded-2xl p-8 flex flex-col items-center justify-center bg-brand-cream/50 text-center hover:bg-brand-green/5 hover:border-brand-green/40 transition-all relative cursor-pointer group">
                     <input
                       type="file"
                       accept=".pdf,.docx"
                       onChange={handleFileChange}
                       className="absolute inset-0 opacity-0 cursor-pointer"
                     />
-                    <Upload className="h-10 w-10 text-slate-600 mb-4" />
-                    <p className="text-sm font-semibold text-slate-300">
+                    <Upload className="h-10 w-10 text-brand-deep/40 group-hover:text-brand-green mb-4 transition-colors" />
+                    <p className="text-sm font-bold text-brand-deep">
                       {selectedFile ? selectedFile.name : "Select a document file"}
                     </p>
-                    <p className="text-xs text-slate-500 mt-1">
+                    <p className="text-xs font-medium text-brand-deep/60 mt-1">
                       {selectedFile ? `${Math.round(selectedFile.size / 1024)} KB` : "Drag and drop your PDF or Word document here"}
                     </p>
                   </div>
@@ -251,69 +251,73 @@ export default function NewAuditPage() {
 
           <button
             type="submit"
-            className="w-full py-4 bg-gradient-to-r from-emerald-600 to-indigo-600 hover:from-emerald-300 hover:to-indigo-500 rounded-xl text-sm font-bold text-white shadow-lg shadow-emerald-600/10 hover:shadow-emerald-600/25 transition-all flex items-center justify-center space-x-2 cursor-pointer"
+            className="w-full py-4 bg-brand-green hover:bg-[#2e745e] rounded-xl text-sm font-bold text-white shadow-lg shadow-brand-green/20 hover:shadow-brand-green/40 transition-all flex items-center justify-center space-x-2 cursor-pointer"
           >
-            <Play className="h-4 w-4" />
+            <Play className="h-4 w-4 fill-current" />
             <span>Generate Compliance Report</span>
           </button>
         </form>
       ) : (
         /* Animated Audit Timeline Console */
-        <div className="glass-card rounded-2xl border border-slate-800/60 p-6 glow-primary space-y-6">
-          <div className="flex items-center justify-between pb-4 border-b border-slate-800/40">
+        <div className="bg-white rounded-2xl border border-brand-deep/10 shadow-lg p-8 space-y-8">
+          <div className="flex items-center justify-between pb-6 border-b border-brand-deep/10">
             <div className="flex items-center space-x-3">
-              <Terminal className="h-5 w-5 text-emerald-300 animate-pulse" />
-              <h2 className="text-lg font-bold text-slate-100">DPDP Auditing Pipeline</h2>
+              <div className="h-10 w-10 rounded-full bg-brand-green/10 flex items-center justify-center">
+                <Terminal className="h-5 w-5 text-brand-green animate-pulse" />
+              </div>
+              <div>
+                <h2 className="text-xl font-extrabold text-brand-deep">DPDP Auditing Pipeline</h2>
+                <p className="text-xs font-medium text-brand-deep/60 mt-1">Executing hybrid compliance scan...</p>
+              </div>
             </div>
-            <span className="text-xs text-emerald-300 font-mono font-bold animate-pulse">RUNNING SCAN</span>
+            <span className="text-[10px] px-3 py-1.5 rounded-full bg-brand-green/10 text-brand-green font-mono font-bold animate-pulse tracking-widest">RUNNING SCAN</span>
           </div>
 
-          <div className="space-y-4 font-mono text-xs">
+          <div className="space-y-4 font-mono text-sm">
             {steps.map((step, idx) => {
               const active = currentStep === idx;
               const completed = currentStep > idx;
               return (
                 <div
                   key={idx}
-                  className={`flex items-start space-x-3 p-3 rounded-lg border transition ${
+                  className={`flex items-start space-x-4 p-4 rounded-xl border transition-all duration-500 ${
                     active
-                      ? "border-emerald-850 bg-emerald-950/10 text-slate-200"
+                      ? "border-brand-green bg-brand-green/5 text-brand-deep shadow-sm scale-[1.02]"
                       : completed
-                      ? "border-slate-900 bg-slate-950/20 text-slate-500"
-                      : "border-transparent text-slate-700"
+                      ? "border-brand-deep/10 bg-brand-cream/50 text-brand-deep/60"
+                      : "border-transparent text-brand-deep/40"
                   }`}
                 >
                   <div className="mt-0.5">
                     {completed ? (
-                      <CheckCircle2 className="h-4 w-4 text-emerald-500 glow-success shrink-0" />
+                      <CheckCircle2 className="h-5 w-5 text-brand-green shrink-0" />
                     ) : active ? (
-                      <Loader2 className="h-4 w-4 text-emerald-300 animate-spin shrink-0" />
+                      <Loader2 className="h-5 w-5 text-brand-green animate-spin shrink-0" />
                     ) : (
-                      <span className="h-4 w-4 rounded-full border border-slate-800 flex items-center justify-center text-[10px] shrink-0 font-bold">
+                      <span className="h-5 w-5 rounded-full border-2 border-brand-deep/20 flex items-center justify-center text-[10px] shrink-0 font-bold">
                         {idx + 1}
                       </span>
                     )}
                   </div>
                   <div>
-                    <p className={`font-semibold ${active ? "text-slate-100" : ""}`}>{step.label}</p>
-                    {active && <p className="text-[10px] text-slate-400 mt-1">{step.desc}</p>}
+                    <p className={`font-bold tracking-tight ${active ? "text-brand-deep" : ""}`}>{step.label}</p>
+                    {active && <p className="text-[11px] text-brand-deep/60 mt-1.5 font-sans font-medium">{step.desc}</p>}
                   </div>
                 </div>
               );
             })}
           </div>
 
-          <div className="space-y-2 border-t border-slate-900 pt-4">
-            <div className="flex justify-between text-[10px] text-slate-500 font-mono">
-              <span>SCANNER PROGRESS</span>
+          <div className="space-y-3 pt-6">
+            <div className="flex justify-between text-[11px] text-brand-deep/60 font-bold tracking-wider uppercase">
+              <span>Scanner Progress</span>
               <span>{Math.round(((currentStep + 1) / steps.length) * 100)}%</span>
             </div>
-            <div className="h-2 w-full bg-slate-950 rounded-full overflow-hidden relative">
+            <div className="h-3 w-full bg-brand-cream rounded-full overflow-hidden relative shadow-inner">
               <div
-                className="h-full bg-gradient-to-r from-emerald-300 to-emerald-400 transition-all duration-300"
+                className="h-full bg-brand-green transition-all duration-500 ease-out"
                 style={{ width: `${((currentStep + 1) / steps.length) * 100}%` }}
               />
-              <div className="scanner-line" />
             </div>
           </div>
         </div>
