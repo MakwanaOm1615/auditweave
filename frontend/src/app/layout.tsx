@@ -34,17 +34,16 @@ export default function RootLayout({
           <header className="h-16 border-b border-brand-deep/10 bg-white/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-50">
             <div className="flex items-center space-x-8">
               <Link href="/" className="flex items-center space-x-3">
-                <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M22 8L10 36H17L20 28H32" stroke="#B1B7AB" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M30 16L34 26L40 40" stroke="#B1B7AB" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M14 26C18 36 26 42 36 40" stroke="#3F9C7E" strokeWidth="5" strokeLinecap="round"/>
+                <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm">
+                  <path d="M14 38L23 14C24 11 26 11 27 14L32 25" stroke="#276152" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M20 32C25 24 33 22 35 34" stroke="#50A381" strokeWidth="5.5" strokeLinecap="round"/>
                 </svg>
                 <div className="flex flex-col justify-center">
                   <span className="font-bold text-xl tracking-tight text-brand-deep leading-none" style={{ fontFamily: 'Georgia, serif' }}>
                     AuditWeave
                   </span>
                   <span className="text-[10px] text-brand-laurel font-medium mt-1 leading-none">
-                    Powered by Axorean
+                    Powered by Axoreon
                   </span>
                 </div>
               </Link>
@@ -78,7 +77,7 @@ export default function RootLayout({
                 <span className="text-brand-green font-semibold flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>Active</span>
               </div>
               <div className="text-[10px] font-bold text-brand-laurel uppercase tracking-wider">
-                Powered by Axorean
+                Powered by Axoreon
               </div>
             </div>
           </header>

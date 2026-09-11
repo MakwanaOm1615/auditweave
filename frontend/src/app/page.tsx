@@ -14,17 +14,16 @@ export default function LandingPage() {
       <nav className="h-20 max-w-7xl mx-auto w-full px-6 flex items-center justify-between border-b border-brand-deep/10 z-10 relative">
         <div className="flex items-center space-x-8">
           <Link href="/" className="flex items-center space-x-3">
-            <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M22 8L10 36H17L20 28H32" stroke="#B1B7AB" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M30 16L34 26L40 40" stroke="#B1B7AB" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M14 26C18 36 26 42 36 40" stroke="#3F9C7E" strokeWidth="5" strokeLinecap="round"/>
+            <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm">
+              <path d="M14 38L23 14C24 11 26 11 27 14L32 25" stroke="#276152" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M20 32C25 24 33 22 35 34" stroke="#50A381" strokeWidth="5.5" strokeLinecap="round"/>
             </svg>
             <div className="flex flex-col justify-center">
               <span className="font-bold text-xl tracking-tight text-brand-deep leading-none" style={{ fontFamily: 'Georgia, serif' }}>
                 AuditWeave
               </span>
               <span className="text-[10px] text-brand-laurel font-medium mt-1 leading-none">
-                Powered by Axorean
+                Powered by Axoreon
               </span>
             </div>
           </Link>
@@ -107,7 +106,7 @@ export default function LandingPage() {
                   <span className="h-3 w-3 rounded-full bg-yellow-400" />
                   <span className="h-3 w-3 rounded-full bg-green-400" />
                 </div>
-                <span className="text-[10px] text-brand-laurel font-mono">console.axorean.com/auditweave</span>
+                <span className="text-[10px] text-brand-laurel font-mono">console.axoreon.com/auditweave</span>
               </div>
 
               {/* Simulated Live Score Card */}
@@ -196,17 +195,16 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-8 mb-8 text-xs text-brand-deep/70">
           <div className="md:col-span-5 space-y-4">
             <div className="flex items-center space-x-3">
-              <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M22 8L10 36H17L20 28H32" stroke="#B1B7AB" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M30 16L34 26L40 40" stroke="#B1B7AB" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M14 26C18 36 26 42 36 40" stroke="#3F9C7E" strokeWidth="5" strokeLinecap="round"/>
+              <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm">
+                <path d="M14 38L23 14C24 11 26 11 27 14L32 25" stroke="#276152" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M20 32C25 24 33 22 35 34" stroke="#50A381" strokeWidth="5.5" strokeLinecap="round"/>
               </svg>
               <div className="flex flex-col justify-center">
                 <span className="font-bold text-lg tracking-tight text-brand-deep leading-none" style={{ fontFamily: 'Georgia, serif' }}>
                   AuditWeave
                 </span>
                 <span className="text-[9px] text-brand-laurel font-medium mt-1 leading-none">
-                  Powered by Axorean
+                  Powered by Axoreon
                 </span>
               </div>
             </div>
@@ -239,11 +237,11 @@ export default function LandingPage() {
         </div>
 
         <div className="max-w-7xl mx-auto px-6 border-t border-brand-deep/10 pt-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="text-xs text-brand-laurel font-medium">© 2026 Axorean. Statutory auditing mapping under DPDP Act 2023.</p>
+          <p className="text-xs text-brand-laurel font-medium">© 2026 Axoreon. Statutory auditing mapping under DPDP Act 2023.</p>
           
           <div className="flex items-center space-x-2 text-[10px] font-bold text-brand-laurel uppercase tracking-widest bg-brand-deep/5 px-4 py-2 rounded-full">
             <span>Powered by</span>
-            <span className="text-brand-deep">AXOREAN</span>
+            <span className="text-brand-deep">AXOREON</span>
           </div>
         </div>
       </footer>
