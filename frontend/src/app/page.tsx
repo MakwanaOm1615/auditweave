@@ -14,7 +14,7 @@ export default function LandingPage() {
       <nav className="h-20 max-w-7xl mx-auto w-full px-6 flex items-center justify-between border-b border-brand-deep/10 z-10 relative">
         <div className="flex items-center space-x-8">
           <Link href="/" className="flex items-center space-x-3">
-            <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-8 h-8 object-contain mix-blend-multiply" />
+            <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-8 h-8 object-contain drop-shadow-sm" />
             <div className="flex flex-col justify-center">
               <span className="font-bold text-xl tracking-tight text-brand-deep leading-none" style={{ fontFamily: 'Georgia, serif' }}>
                 AuditWeave
@@ -192,7 +192,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-8 mb-8 text-xs text-brand-deep/70">
           <div className="md:col-span-5 space-y-4">
             <div className="flex items-center space-x-3">
-              <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-6 h-6 object-contain mix-blend-multiply" />
+              <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-6 h-6 object-contain drop-shadow-sm" />
               <div className="flex flex-col justify-center">
                 <span className="font-bold text-lg tracking-tight text-brand-deep leading-none" style={{ fontFamily: 'Georgia, serif' }}>
                   AuditWeave
