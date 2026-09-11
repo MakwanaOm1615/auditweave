@@ -34,10 +34,7 @@ export default function RootLayout({
           <header className="h-16 border-b border-brand-deep/10 bg-white/80 backdrop-blur-md px-6 flex items-center justify-between sticky top-0 z-50">
             <div className="flex items-center space-x-8">
               <Link href="/" className="flex items-center space-x-3">
-                <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm">
-                  <path d="M14 38L23 14C24 11 26 11 27 14L32 25" stroke="#276152" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M20 32C25 24 33 22 35 34" stroke="#50A381" strokeWidth="5.5" strokeLinecap="round"/>
-                </svg>
+                <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-8 h-8 object-contain drop-shadow-sm" />
                 <div className="flex flex-col justify-center">
                   <span className="font-bold text-xl tracking-tight text-brand-deep leading-none" style={{ fontFamily: 'Georgia, serif' }}>
                     AuditWeave

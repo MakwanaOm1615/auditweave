@@ -14,10 +14,7 @@ export default function LandingPage() {
       <nav className="h-20 max-w-7xl mx-auto w-full px-6 flex items-center justify-between border-b border-brand-deep/10 z-10 relative">
         <div className="flex items-center space-x-8">
           <Link href="/" className="flex items-center space-x-3">
-            <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm">
-              <path d="M14 38L23 14C24 11 26 11 27 14L32 25" stroke="#276152" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <path d="M20 32C25 24 33 22 35 34" stroke="#50A381" strokeWidth="5.5" strokeLinecap="round"/>
-            </svg>
+            <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-8 h-8 object-contain drop-shadow-sm" />
             <div className="flex flex-col justify-center">
               <span className="font-bold text-xl tracking-tight text-brand-deep leading-none" style={{ fontFamily: 'Georgia, serif' }}>
                 AuditWeave
@@ -195,10 +192,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-8 mb-8 text-xs text-brand-deep/70">
           <div className="md:col-span-5 space-y-4">
             <div className="flex items-center space-x-3">
-              <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm">
-                <path d="M14 38L23 14C24 11 26 11 27 14L32 25" stroke="#276152" strokeWidth="4.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <path d="M20 32C25 24 33 22 35 34" stroke="#50A381" strokeWidth="5.5" strokeLinecap="round"/>
-              </svg>
+              <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-6 h-6 object-contain drop-shadow-sm" />
               <div className="flex flex-col justify-center">
                 <span className="font-bold text-lg tracking-tight text-brand-deep leading-none" style={{ fontFamily: 'Georgia, serif' }}>
                   AuditWeave
