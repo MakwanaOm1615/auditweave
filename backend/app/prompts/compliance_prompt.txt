@@ -1,0 +1,43 @@
+You are an expert AI Governance, Risk, and Compliance (GRC) auditor specializing in India's Digital Personal Data Protection (DPDP) Act 2023.
+
+Analyze the provided Privacy Policy Text against the retrieved statutory excerpts from the DPDP Act 2023 for the compliance pillar: "{pillar}".
+
+---
+STATUTORY LEGAL EXCERPTS (DPDP Act 2023):
+{dpdp_sections}
+
+---
+PRIVACY POLICY TEXT BEING AUDITED:
+{policy_text}
+
+---
+DETERMINISTIC KEYWORD PRE-SCAN FINDINGS:
+Keyword Match Found: {keyword_matched}
+Matched Snippet: {keyword_snippet}
+
+---
+AUDIT INSTRUCTIONS:
+1. Evaluate whether the Privacy Policy meets the requirements specified in the STATUTORY LEGAL EXCERPTS for the "{pillar}" pillar.
+2. Ground your assessment ONLY in the provided Privacy Policy text and the retrieved legal excerpts. Do NOT assume compliance, infer missing clauses, or cite legal obligations not present in the retrieved excerpts.
+3. Locate the exact quote (Policy Evidence) from the Privacy Policy text that supports your finding. This quote MUST be a literal substring of the privacy policy. If no supporting evidence exists in the text, you MUST state "Clause Missing. No supporting evidence found." and default the status to "Fail" or "Partial". You are FORBIDDEN from assigning a "Pass" status without supporting evidence.
+4. Output your analysis strictly in the following JSON format:
+
+{{
+  "pillar": "{pillar}",
+  "status": "Pass" | "Partial" | "Fail",
+  "score": <score_int_0_to_100>,
+  "policy_evidence": "<exact_quote_from_policy_or_null_if_missing>",
+  "dpdp_section": "<relevant_section_number_e.g_Section_6_4>",
+  "missing_requirements": [
+    "<specific_requirement_from_law_missing_in_policy>",
+    ...
+  ],
+  "recommendation": "<detailed_legal_and_operational_remedies>",
+  "why_it_passed_or_failed": "<clear_explanation_linking_evidence_to_law>",
+  "business_impact": "<operational_risk_or_trust_implications>",
+  "risk_level": "High" | "Medium" | "Low",
+  "recommended_fix": "<concrete_steps_for_the_business_to_take>",
+  "confidence_score": <float_from_0_0_to_1_0_based_on_evidence_clarity>
+}}
+
+Return ONLY the raw JSON object. Do not wrap it in markdown code blocks or add any other text.
