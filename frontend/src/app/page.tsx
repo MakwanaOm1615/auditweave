@@ -13,15 +13,18 @@ export default function LandingPage() {
       {/* Top Navbar */}
       <nav className="h-20 max-w-7xl mx-auto w-full px-6 flex items-center justify-between border-b border-brand-deep/10 z-10 relative">
         <div className="flex items-center space-x-8">
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="font-extrabold text-xl tracking-wide text-brand-deep font-sans">
-              AXOREAN
-            </span>
-            <span className="text-brand-laurel text-lg">|</span>
-            <div className="flex items-center space-x-1">
-              <Shield className="h-5 w-5 text-brand-green" />
-              <span className="font-semibold text-sm tracking-wide text-brand-green font-sans">
+          <Link href="/" className="flex items-center space-x-3">
+            <svg width="32" height="32" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M22 8L10 36H17L20 28H32" stroke="#B1B7AB" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M30 16L34 26L40 40" stroke="#B1B7AB" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
+              <path d="M14 26C18 36 26 42 36 40" stroke="#3F9C7E" strokeWidth="5" strokeLinecap="round"/>
+            </svg>
+            <div className="flex flex-col justify-center">
+              <span className="font-bold text-xl tracking-tight text-brand-deep leading-none" style={{ fontFamily: 'Georgia, serif' }}>
                 AuditWeave
+              </span>
+              <span className="text-[10px] text-brand-laurel font-medium mt-1 leading-none">
+                Powered by Axorean
               </span>
             </div>
           </Link>
@@ -192,15 +195,18 @@ export default function LandingPage() {
       <footer className="border-t border-brand-deep/10 bg-brand-cream py-10 w-full z-10">
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-8 mb-8 text-xs text-brand-deep/70">
           <div className="md:col-span-5 space-y-4">
-            <div className="flex items-center space-x-2">
-              <span className="font-extrabold text-sm tracking-wide text-brand-deep font-sans">
-                AXOREAN
-              </span>
-              <span className="text-brand-laurel">|</span>
-              <div className="flex items-center space-x-1">
-                <Shield className="h-4 w-4 text-brand-green" />
-                <span className="font-bold text-sm tracking-wide text-brand-green font-sans">
+            <div className="flex items-center space-x-3">
+              <svg width="24" height="24" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M22 8L10 36H17L20 28H32" stroke="#B1B7AB" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M30 16L34 26L40 40" stroke="#B1B7AB" strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M14 26C18 36 26 42 36 40" stroke="#3F9C7E" strokeWidth="5" strokeLinecap="round"/>
+              </svg>
+              <div className="flex flex-col justify-center">
+                <span className="font-bold text-lg tracking-tight text-brand-deep leading-none" style={{ fontFamily: 'Georgia, serif' }}>
                   AuditWeave
+                </span>
+                <span className="text-[9px] text-brand-laurel font-medium mt-1 leading-none">
+                  Powered by Axorean
                 </span>
               </div>
             </div>
