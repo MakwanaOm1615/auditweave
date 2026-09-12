@@ -3,11 +3,15 @@
 # ===========================
 .env
 .env.*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 
 # ===========================
 # Python
 # ===========================
 venv/
+backend/venv/
 __pycache__/
 .pytest_cache/
 *.pyc
@@ -18,13 +22,16 @@ __pycache__/
 # Database
 # ===========================
 AuditWeave.db
+*.db
 *.sqlite3
 
 # ===========================
 # Node.js
 # ===========================
 node_modules/
+frontend/node_modules/
 .next/
+frontend/.next/
 dist/
 build/
 

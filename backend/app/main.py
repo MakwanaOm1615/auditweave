@@ -1,5 +1,6 @@
 import datetime
 import os
+import google.generativeai as genai
 from typing import List, Optional
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
@@ -42,7 +43,7 @@ app.add_middleware(
 )
 
 # Initialize database tables on startup
-Base.metadata.create_all(bind=engine)
+# Base.metadata.create_all(bind=engine) # Disabled: Managed by Alembic
 
 @app.on_event("startup")
 def startup_populate_benchmarks():
