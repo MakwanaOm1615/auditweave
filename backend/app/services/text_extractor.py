@@ -1,4 +1,5 @@
 import re
+import json
 import requests
 from bs4 import BeautifulSoup
 from pypdf import PdfReader
@@ -6,11 +7,35 @@ import io
 import docx
 
 def clean_extracted_text(text: str) -> str:
-    """Removes excessive whitespace and standardizes formatting."""
-    # Replace multiple newlines/spaces with single ones
-    text = re.sub(r'\s+', ' ', text)
-    text = re.sub(r'\n+', '\n', text)
-    return text.strip()
+    """Normalize extracted policy text while preserving document structure."""
+    text = text.replace("\ufeff", "").replace("\r\n", "\n").replace("\r", "\n")
+    lines = text.split("\n")
+    cleaned_lines: list[str] = []
+    reading_metadata = True
+
+    for raw_line in lines:
+        line = re.sub(r"[ \t\f\v]+", " ", raw_line).strip()
+
+        if reading_metadata:
+            lowered = line.lower()
+            if lowered.startswith(("title:", "url source:", "published time:")):
+                continue
+            if lowered.startswith("markdown content:"):
+                remainder = line.split(":", 1)[1].strip()
+                if remainder and remainder.lower() != "legal document":
+                    cleaned_lines.append(remainder)
+                reading_metadata = False
+                continue
+            if line:
+                reading_metadata = False
+
+        if not line:
+            if cleaned_lines and cleaned_lines[-1] != "":
+                cleaned_lines.append("")
+            continue
+        cleaned_lines.append(line)
+
+    return "\n".join(cleaned_lines).strip()
 
 def extract_text_from_json_state(obj) -> list:
     """Recursively extracts human-readable text strings from JSON SPA state objects (e.g. __NEXT_DATA__)."""

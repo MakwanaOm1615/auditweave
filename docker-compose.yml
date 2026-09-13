@@ -8,24 +8,21 @@ services:
     ports:
       - "8000:8000"
     environment:
-      - JWT_SECRET=AuditWeave_docker_secret_key_2026_jwt_token_secure
-      - DATABASE_URL=sqlite:///./AuditWeave.db
+      - JWT_SECRET=${JWT_SECRET:?JWT_SECRET must be set}
+      - DATABASE_URL=${DATABASE_URL:?DATABASE_URL must be set}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
-    volumes:
-      - backend-db:/app
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     ports:
       - "3000:3000"
     environment:
-      - NEXT_PUBLIC_API_URL=http://localhost:8000/api
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
     depends_on:
       - backend
     restart: unless-stopped
-
-volumes:
-  backend-db:

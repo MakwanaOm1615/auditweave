@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Shield, User, Layers, History, LogOut, LayoutDashboard } from "lucide-react";
-import { isAuthenticated, logoutUser, getCurrentEmail } from "@/lib/api";
+import { ChevronLeft, ChevronRight, Shield, User, Layers, History, LogOut, LayoutDashboard } from "lucide-react";
+import { getCurrentEmail, getCurrentUser, isAuthenticated, logoutUser } from "@/lib/api";
+import { AUTH_SESSION_EVENT } from "@/lib/auth/session";
 import "./globals.css";
 
 export default function RootLayout({
@@ -16,21 +18,57 @@ export default function RootLayout({
   const router = useRouter();
   const [isAuth, setIsAuth] = useState(false);
   const [userEmail, setUserEmail] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
 
   useEffect(() => {
-    setIsAuth(isAuthenticated());
-    setUserEmail(getCurrentEmail());
-    
-    // Route protection
     const publicPaths = ["/", "/login", "/register"];
-    if (!publicPaths.includes(pathname) && !isAuthenticated()) {
-      router.push("/login");
-    }
+    let disposed = false;
+    let profileRequestVersion = 0;
+    const syncSession = () => {
+      const requestVersion = ++profileRequestVersion;
+      const authenticated = isAuthenticated();
+      setIsAuth(authenticated);
+      setUserEmail(authenticated ? getCurrentEmail() : "");
+      if (authenticated) {
+        void getCurrentUser()
+          .then((profile) => {
+            if (!disposed && requestVersion === profileRequestVersion) {
+              setFirstName(profile.first_name?.trim() || "");
+            }
+          })
+          .catch(() => {
+            if (!disposed && requestVersion === profileRequestVersion) setFirstName("");
+          });
+      } else {
+        setFirstName("");
+      }
+      if (!publicPaths.includes(pathname) && !authenticated) router.push("/login");
+    };
+    syncSession();
+    window.addEventListener(AUTH_SESSION_EVENT, syncSession);
+    return () => {
+      disposed = true;
+      window.removeEventListener(AUTH_SESSION_EVENT, syncSession);
+    };
   }, [pathname, router]);
+
+  useEffect(() => {
+    const frame = window.requestAnimationFrame(() => {
+      setIsSidebarOpen(window.innerWidth >= 1024);
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, []);
+
+  useEffect(() => {
+    if (window.innerWidth >= 1024) return;
+    const frame = window.requestAnimationFrame(() => setIsSidebarOpen(false));
+    return () => window.cancelAnimationFrame(frame);
+  }, [pathname]);
 
   const handleLogout = () => {
     logoutUser();
-    setIsAuth(false);
     setIsAuth(false);
     router.push("/login");
   };
@@ -44,78 +82,177 @@ export default function RootLayout({
   ];
 
   const hideHeaderPaths = ["/", "/login", "/register"];
-  const shouldShowHeader = !hideHeaderPaths.includes(pathname);
+  const shouldShowSidebar = !hideHeaderPaths.includes(pathname);
+  const fallbackName = userEmail.split("@")[0].split(/[._-]/)[0].replace(/\d+$/, "");
+  const displayName = firstName || (fallbackName ? fallbackName.charAt(0).toUpperCase() + fallbackName.slice(1) : "there");
+  const profileInitial = (firstName || userEmail).charAt(0);
 
   return (
     <html lang="en">
-      <body className="min-h-screen bg-brand-cream text-brand-deep antialiased flex flex-col">
-        {shouldShowHeader && (
-          <header className="h-16 border-b border-brand-deep/10 bg-white/80 backdrop-blur-md px-4 lg:px-6 flex items-center justify-between sticky top-0 z-50 overflow-hidden">
-            <div className="flex items-center space-x-4 min-w-0 flex-1">
-              <Link href="/" className="flex items-center space-x-2 shrink-0">
-                <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-md" />
-                <div className="flex flex-col justify-center">
-                  <span className="font-extrabold text-xl md:text-2xl tracking-tighter text-brand-deep leading-none font-serif">
-                    AuditWeave
-                  </span>
-                  <span className="text-[8px] md:text-[10px] text-brand-laurel font-bold mt-1 leading-none uppercase tracking-widest">
-                    POWERED BY AXOREON
-                  </span>
-                </div>
-              </Link>
-              
-              <nav className="hidden md:flex items-center space-x-1 overflow-x-auto scrollbar-hide py-1">
-                {navLinks.map((link) => {
-                  const Icon = link.icon;
-                  const active = pathname === link.href || pathname.startsWith(link.href + "/");
-                  return (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      className={`flex items-center space-x-2 px-3 py-2 rounded-md text-sm font-medium transition-all ${
-                        active
-                          ? "bg-brand-green/10 text-brand-green"
-                          : "text-brand-deep/70 hover:text-brand-deep hover:bg-brand-deep/5"
-                      }`}
-                    >
-                      <Icon className="h-4 w-4 shrink-0" />
-                      <span className="whitespace-nowrap">{link.label}</span>
-                    </Link>
-                  );
-                })}
-              </nav>
-            </div>
+      <body className="min-h-screen bg-brand-cream text-brand-deep antialiased">
+        {shouldShowSidebar && (
+          <>
+            {isSidebarOpen && (
+              <button
+                type="button"
+                aria-label="Close navigation menu"
+                className="fixed inset-0 z-40 bg-brand-deep/35 backdrop-blur-[2px] lg:hidden"
+                onClick={() => setIsSidebarOpen(false)}
+              />
+            )}
 
-            <div className="flex items-center space-x-3 lg:space-x-4 shrink-0">
-              <div className="hidden xl:flex items-center space-x-2 text-xs text-brand-deep/60 mr-2 lg:mr-4">
-                <span>DPDP Act 2023</span>
-                <span className="h-1 w-1 rounded-full bg-brand-laurel"></span>
-                <span className="text-brand-green font-semibold flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse"></span>Active</span>
+            <aside
+              className={`fixed inset-y-0 left-0 z-50 flex overflow-hidden border-r border-white/10 bg-brand-deep text-white shadow-2xl transition-[width,transform] duration-300 ease-out ${
+                isSidebarOpen
+                  ? "w-72 translate-x-0 lg:w-64"
+                  : "w-0 -translate-x-full lg:w-20 lg:translate-x-0"
+              }`}
+            >
+              <div className="pointer-events-none absolute -left-28 top-10 h-72 w-72 rounded-full border border-brand-green/50" />
+              <div className="pointer-events-none absolute -left-12 top-28 h-44 w-44 rounded-full border border-brand-green/50" />
+
+              <div className="relative z-10 flex h-full w-full min-w-0 flex-col px-3 py-5">
+                <Link
+                  href="/dashboard"
+                  className={`mb-8 flex h-12 items-center text-white ${isSidebarOpen ? "gap-3 px-2" : "justify-center"}`}
+                >
+                  <Image
+                    src="/axoreon-logo.png"
+                    alt="AuditWeave"
+                    width={38}
+                    height={38}
+                    className="h-9 w-9 shrink-0 object-contain brightness-0 invert"
+                    priority
+                  />
+                  {isSidebarOpen && (
+                    <span className="min-w-0">
+                      <span className="block whitespace-nowrap font-serif text-xl font-black leading-none">AuditWeave</span>
+                      <span className="mt-1.5 block whitespace-nowrap text-[7px] font-extrabold uppercase tracking-[0.2em] text-[#3F9C7E]">Powered by Axoreon</span>
+                    </span>
+                  )}
+                </Link>
+
+                <nav className="flex flex-1 flex-col gap-2" aria-label="Main navigation">
+                  {navLinks.map((link) => {
+                    const Icon = link.icon;
+                    const active = pathname === link.href || pathname.startsWith(link.href + "/");
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        title={!isSidebarOpen ? link.label : undefined}
+                        className={`flex h-11 items-center rounded-xl text-sm font-semibold text-white transition-colors ${
+                          isSidebarOpen ? "gap-3 px-3" : "justify-center px-0"
+                        } ${active ? "bg-white/15 shadow-sm" : "text-white/75 hover:bg-white/10 hover:text-white"}`}
+                      >
+                        <Icon className="h-[18px] w-[18px] shrink-0" />
+                        {isSidebarOpen && <span className="whitespace-nowrap">{link.label}</span>}
+                      </Link>
+                    );
+                  })}
+                </nav>
+
+                <div className="border-t border-white/10 pt-4">
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    title="Sign Out"
+                    className={`flex h-11 w-full items-center rounded-xl text-sm font-semibold text-white/75 transition-colors hover:bg-red-500/15 hover:text-white ${
+                      isSidebarOpen ? "gap-3 px-3" : "justify-center"
+                    }`}
+                  >
+                    <LogOut className="h-[18px] w-[18px] shrink-0" />
+                    {isSidebarOpen && <span>Sign Out</span>}
+                  </button>
+                </div>
               </div>
-              
-              {isAuth && userEmail && (
-                <div className="flex items-center space-x-2 bg-brand-deep/5 px-3 py-1.5 rounded-full border border-brand-deep/10 mr-1 md:mr-2 shrink-0">
-                  <div className="h-6 w-6 rounded-full bg-brand-green text-white flex items-center justify-center text-xs font-bold uppercase">
-                    {userEmail.charAt(0)}
-                  </div>
-                  <span className="text-xs font-semibold text-brand-deep max-w-[120px] lg:max-w-[150px] truncate">
-                    {userEmail}
-                  </span>
-                </div>
-              )}
+            </aside>
 
-              <button 
-                onClick={handleLogout}
-                className="p-2 text-brand-deep/60 hover:text-red-500 hover:bg-red-50 rounded-lg transition-all border border-transparent hover:border-red-100"
-                title="Sign Out"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
-            </div>
-          </header>
+            <button
+              type="button"
+              onClick={() => setIsSidebarOpen((open) => !open)}
+              aria-label={isSidebarOpen ? "Collapse sidebar" : "Expand sidebar"}
+              aria-expanded={isSidebarOpen}
+              className={`fixed top-1/2 z-[60] flex h-9 w-9 -translate-y-1/2 items-center justify-center rounded-full border-4 border-brand-cream bg-brand-green text-white shadow-lg transition-[left,background-color] duration-300 hover:bg-[#3F9C7E] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#3F9C7E] focus-visible:ring-offset-2 ${
+                isSidebarOpen ? "left-[270px] lg:left-[238px]" : "left-0 lg:left-[62px]"
+              }`}
+            >
+              {isSidebarOpen ? <ChevronLeft className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
+            </button>
+          </>
         )}
 
-        <main className="flex-1 w-full flex flex-col bg-brand-cream">
+        <main
+          className={`flex min-h-screen w-full flex-col bg-brand-cream transition-[margin] duration-300 ${
+            shouldShowSidebar ? (isSidebarOpen ? "lg:ml-64 lg:w-[calc(100%-16rem)]" : "lg:ml-20 lg:w-[calc(100%-5rem)]") : ""
+          }`}
+        >
+          {shouldShowSidebar && (
+            <header className="sticky top-0 z-30 flex h-16 shrink-0 items-center justify-between gap-4 border-b border-brand-deep/10 bg-[#FDFBF7]/90 px-5 backdrop-blur-md sm:px-7">
+              {isAuth ? (
+                <div className="min-w-0">
+                  <p className="truncate text-base font-extrabold text-brand-deep sm:text-lg">
+                    Welcome back, <span className="text-brand-green">{displayName}</span>
+                  </p>
+                  <p className="hidden truncate text-[11px] font-medium text-brand-deep/50 sm:block">
+                    Your compliance workspace is ready for today.
+                  </p>
+                </div>
+              ) : <div />}
+              {isAuth && userEmail && (
+                <div className="relative">
+                  {isProfileOpen && (
+                    <button
+                      type="button"
+                      aria-label="Close profile menu"
+                      className="fixed inset-0 z-20 cursor-default"
+                      onClick={() => setIsProfileOpen(false)}
+                    />
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setIsProfileOpen((open) => !open)}
+                    aria-label="Open profile menu"
+                    aria-haspopup="menu"
+                    aria-expanded={isProfileOpen}
+                    className="relative z-30 flex h-10 w-10 items-center justify-center rounded-full bg-brand-green text-sm font-extrabold uppercase text-white shadow-sm transition-colors hover:bg-[#1C5E47] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-green/30 focus-visible:ring-offset-2"
+                  >
+                    {profileInitial}
+                  </button>
+
+                  {isProfileOpen && (
+                    <div
+                      role="menu"
+                      className="absolute right-0 top-12 z-30 w-72 overflow-hidden rounded-2xl border border-brand-deep/10 bg-white p-2 shadow-[0_18px_50px_rgba(13,58,53,0.16)]"
+                    >
+                      <div className="flex items-center gap-3 rounded-xl bg-brand-deep/[0.04] p-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-brand-green text-sm font-extrabold uppercase text-white">
+                          {profileInitial}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-xs font-bold text-brand-deep">{firstName || displayName}</p>
+                          <p className="truncate text-xs text-brand-deep/60">{userEmail}</p>
+                        </div>
+                      </div>
+                      <div className="px-3 py-2.5 text-[11px] font-medium text-brand-deep/55">
+                        DPDP Act 2023 workspace · Active
+                      </div>
+                      <button
+                        type="button"
+                        role="menuitem"
+                        onClick={handleLogout}
+                        className="flex h-10 w-full items-center gap-2.5 rounded-xl px-3 text-sm font-semibold text-red-600 transition-colors hover:bg-red-50"
+                      >
+                        <LogOut className="h-4 w-4" />
+                        <span>Sign Out</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </header>
+          )}
           {children}
         </main>
       </body>

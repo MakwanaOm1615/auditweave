@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { createBatchAudit, createAuditWithFile } from "@/lib/api";
+import { createBatchAudit, createAuditWithFile, downloadAuditReport } from "@/lib/api";
 import { 
   Layers, Plus, Trash2, Shield, Globe, FileText, Upload, Sparkles, 
   CheckCircle2, XCircle, Trophy, ArrowUpRight, Download, Loader2, AlertCircle, Building2, ChevronDown
@@ -482,15 +482,14 @@ export default function BatchAuditPage() {
                     <ArrowUpRight className="h-3.5 w-3.5" />
                   </Link>
 
-                  <a
-                    href={`http://127.0.0.1:8000/api/report/${audit.id}`}
-                    target="_blank"
-                    rel="noreferrer"
+                  <button
+                    type="button"
+                    onClick={() => void downloadAuditReport(audit.id)}
                     className="p-2.5 rounded-lg bg-white hover:bg-brand-cream text-brand-deep border border-brand-green/20 text-xs transition shadow-sm"
                     title="Download PDF Report"
                   >
                     <Download className="h-4 w-4" />
-                  </a>
+                  </button>
                 </div>
               </div>
             ))}

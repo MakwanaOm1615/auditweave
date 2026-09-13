@@ -3,18 +3,56 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, AlertTriangle, CheckCircle, ShieldCheck, HelpCircle, Layers, Calendar, ChevronRight, Activity, TrendingUp } from "lucide-react";
+import { LayoutDashboard, AlertTriangle, CheckCircle, ShieldCheck, Calendar, ChevronRight, Activity, TrendingUp } from "lucide-react";
 import { getDashboard, getBenchmarks, isAuthenticated } from "@/lib/api";
+
+interface RecentAudit {
+  id: number;
+  company_name: string;
+  industry: string;
+  score: number;
+  status: string;
+}
+
+interface RiskDistribution {
+  Critical: number;
+  High: number;
+  Medium: number;
+  Low: number;
+  Informational: number;
+}
+
+interface ExecutiveRisk {
+  overall_risk: string;
+  highest_risk_area: string;
+  best_performing_area: string;
+  compliance_pct: number;
+  critical_findings: number;
+  immediate_priority: string;
+}
+
+interface DashboardData {
+  total_audits: number;
+  average_compliance_score: number;
+  risk_distribution: RiskDistribution;
+  recent_audits: RecentAudit[];
+  executive_risk: ExecutiveRisk;
+}
+
+interface Benchmark {
+  id: number;
+  industry: string;
+  companies_count: number;
+  average_compliance_score: number;
+}
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-  const [dashboardData, setDashboardData] = useState<any>(null);
-  const [benchmarks, setBenchmarks] = useState<any[]>([]);
+  const [dashboardData, setDashboardData] = useState<DashboardData | null>(null);
+  const [benchmarks, setBenchmarks] = useState<Benchmark[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setMounted(true);
     if (!isAuthenticated()) {
       router.push("/login");
       return;
@@ -24,8 +62,8 @@ export default function DashboardPage() {
       try {
         const dData = await getDashboard();
         const bData = await getBenchmarks();
-        setDashboardData(dData);
-        setBenchmarks(bData);
+        setDashboardData(dData as DashboardData);
+        setBenchmarks(bData as Benchmark[]);
       } catch (err) {
         console.error("Error loading dashboard:", err);
       } finally {
@@ -35,7 +73,7 @@ export default function DashboardPage() {
     fetchData();
   }, [router]);
 
-  if (!mounted || loading) {
+  if (loading) {
     return (
       <div className="flex h-[calc(100vh-4rem)] w-full items-center justify-center bg-brand-cream text-brand-deep/60 font-mono text-sm">
         <Activity className="h-6 w-6 text-brand-green animate-spin mr-3" />
@@ -104,20 +142,28 @@ export default function DashboardPage() {
 
       {/* Top statistics summary */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <div className="glass-card rounded-xl p-5 relative overflow-hidden">
-          <p className="text-xs text-brand-deep/60 font-semibold uppercase tracking-wider">Total Scans Completed</p>
-          <p className="text-3xl font-bold text-brand-deep mt-2 font-mono">{stats.total_audits}</p>
-          <div className="absolute top-4 right-4 text-brand-deep/10">
-            <LayoutDashboard className="h-8 w-8" />
+        <div className="glass-card relative overflow-hidden rounded-xl p-5">
+          <div className="flex items-start justify-between gap-3">
+            <p className="max-w-[150px] text-xs font-semibold uppercase leading-[1.45] tracking-wider text-brand-deep/60">
+              Total Scans Completed
+            </p>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-green/10 bg-brand-green/[0.07] text-brand-green/45">
+              <LayoutDashboard className="h-5 w-5" />
+            </div>
           </div>
+          <p className="mt-2 font-mono text-3xl font-bold text-brand-deep">{stats.total_audits}</p>
         </div>
 
-        <div className="glass-card rounded-xl p-5 relative overflow-hidden">
-          <p className="text-xs text-brand-deep/60 font-semibold uppercase tracking-wider">Average Compliance Score</p>
-          <p className="text-3xl font-bold text-brand-green mt-2 font-mono">{stats.average_compliance_score}%</p>
-          <div className="absolute top-4 right-4">
-            <ShieldCheck className="h-8 w-8 text-brand-green/20" />
+        <div className="glass-card relative overflow-hidden rounded-xl p-5">
+          <div className="flex items-start justify-between gap-3">
+            <p className="max-w-[150px] text-xs font-semibold uppercase leading-[1.45] tracking-wider text-brand-deep/60">
+              Average Compliance Score
+            </p>
+            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-brand-green/10 bg-brand-green/[0.07] text-brand-green/45">
+              <ShieldCheck className="h-5 w-5" />
+            </div>
           </div>
+          <p className="mt-2 font-mono text-3xl font-bold text-brand-green">{stats.average_compliance_score}%</p>
         </div>
 
         <div className="glass-card rounded-xl p-5 md:col-span-2 relative overflow-hidden">
@@ -293,7 +339,7 @@ export default function DashboardPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-brand-deep/5">
-                {stats.recent_audits.map((a: any) => (
+                {stats.recent_audits.map((a) => (
                   <tr key={a.id} className="text-brand-deep/80 hover:bg-brand-deep/5 transition-colors">
                     <td className="py-3 font-semibold text-brand-deep">{a.company_name}</td>
                     <td className="py-3 text-brand-deep/70">{a.industry}</td>

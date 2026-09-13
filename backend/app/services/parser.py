@@ -1,19 +1,7 @@
-import re
 import io
-import requests
-from bs4 import BeautifulSoup
 from pypdf import PdfReader
 import docx
-
-def clean_extracted_text(text: str) -> str:
-    """Removes excessive whitespace and standardizes formatting, keeping basic newlines."""
-    # Replace multiple spaces with a single space
-    text = re.sub(r'[ \t\r\f\v]+', ' ', text)
-    # Replace multiple newlines with a single newline
-    text = re.sub(r'\n+', '\n', text)
-    return text.strip()
-
-from .text_extractor import extract_text_from_url
+from .text_extractor import clean_extracted_text, extract_text_from_url
 
 def extract_text_from_pdf(file_bytes: bytes) -> str:
     """Extracts text from PDF bytes using PyPDF."""

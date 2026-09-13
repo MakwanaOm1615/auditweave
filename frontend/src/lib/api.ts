@@ -1,5 +1,10 @@
-const API_BASE =
-  (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000") + "/api";
+import { clearAuthSession, getStoredEmail, getStoredRole, getValidAccessToken, saveAuthSession } from "./auth/session";
+import { parseAuthTokenResponse, parseRegisteredUserResponse, parseUserProfileResponse } from "./auth/types";
+import type { AuthTokenResponse, RegisteredUserResponse, UserProfileResponse } from "./auth/types";
+
+const configuredApiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
+const API_BASE = `${configuredApiUrl.replace(/\/api$/, "")}/api`;
+const API_REQUEST_TIMEOUT_MS = 15_000;
 
 // Helper to get headers
 function getHeaders(isMultipart = false) {
@@ -8,7 +13,7 @@ function getHeaders(isMultipart = false) {
     headers["Content-Type"] = "application/json";
   }
   if (typeof window !== "undefined") {
-    const token = localStorage.getItem("auditweave_token");
+    const token = getValidAccessToken();
     if (token) headers["Authorization"] = `Bearer ${token}`;
   }
   return headers;
@@ -17,12 +22,12 @@ function getHeaders(isMultipart = false) {
 // Check if user is logged in
 export function isAuthenticated(): boolean {
   if (typeof window === "undefined") return false;
-  return !!localStorage.getItem("auditweave_token");
+  return getValidAccessToken() !== null;
 }
 
 export function getCurrentRole(): string {
   if (typeof window === "undefined") return "user";
-  return localStorage.getItem("auditweave_role") || "user";
+  return getStoredRole();
 }
 
 export function isAdmin(): boolean {
@@ -31,14 +36,37 @@ export function isAdmin(): boolean {
 
 export function getCurrentEmail(): string {
   if (typeof window === "undefined") return "";
-  return localStorage.getItem("auditweave_email") || "";
+  return getStoredEmail();
 }
 
 export function logoutUser() {
   if (typeof window === "undefined") return;
-  localStorage.removeItem("auditweave_token");
-  localStorage.removeItem("auditweave_role");
-  localStorage.removeItem("auditweave_email");
+  clearAuthSession();
+}
+
+export function getErrorMessage(error: unknown, fallback: string): string {
+  return error instanceof Error && error.message ? error.message : fallback;
+}
+
+function formatApiError(value: unknown): string {
+  if (typeof value === "string") return value;
+  if (Array.isArray(value)) {
+    const messages = value.flatMap((item) => {
+      if (typeof item === "object" && item !== null && "msg" in item && typeof item.msg === "string") {
+        return [item.msg];
+      }
+      return [];
+    });
+    if (messages.length) return messages.join(" ");
+  }
+  return "Server returned an error.";
+}
+
+async function throwResponseError(res: Response): Promise<never> {
+  if (res.status === 401) clearAuthSession();
+  const body: unknown = await res.json().catch(() => null);
+  const detail = typeof body === "object" && body !== null && "detail" in body ? body.detail : body;
+  throw new Error(formatApiError(detail));
 }
 
 // Low-level request wrapper
@@ -48,16 +76,27 @@ async function request<T>(endpoint: string, options: RequestInit = {}, isMultipa
   
   const mergedOptions = {
     ...options,
+    signal: options.signal ?? AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
     headers: {
       ...headers,
       ...(options.headers || {}),
     }
   };
 
-  const res = await fetch(url, mergedOptions);
+  let res: Response;
+  try {
+    res = await fetch(url, mergedOptions);
+  } catch (error: unknown) {
+    if (error instanceof DOMException && error.name === "TimeoutError") {
+      throw new Error("The API service did not respond. Verify that the backend is running and try again.");
+    }
+    if (error instanceof TypeError) {
+      throw new Error("Unable to connect to the API service. Verify that the backend is running.");
+    }
+    throw error;
+  }
   if (!res.ok) {
-    const errData = await res.json().catch(() => ({ detail: "Unknown error occurred" }));
-    throw new Error(errData.detail || "Server returned error status");
+    await throwResponseError(res);
   }
   return await res.json() as T;
 }
@@ -98,12 +137,12 @@ export async function createAuditWithFile(companyName: string, industry: string,
   formData.append("file", file);
   
   const res = await fetch(`${API_BASE}/audit/file`, {
-  method: "POST",
-  body: formData
-});
+    method: "POST",
+    headers: getHeaders(true),
+    body: formData
+  });
   if (!res.ok) {
-    const errText = await res.text().catch(() => "File upload failed");
-    throw new Error(errText || "File upload failed");
+    await throwResponseError(res);
   }
   return await res.json();
 }
@@ -115,33 +154,72 @@ export async function askCopilot(auditId: string | number, message: string): Pro
   });
 }
 
-export async function rewriteClause(findingId: number, clauseText: string): Promise<any> {
-  return request<any>("/audit/rewrite", {
+export interface RewriteClauseResponse {
+  finding_id: number;
+  original_text: string;
+  rewritten_text: string;
+  disclaimer: string;
+  generation_mode: "ai" | "template";
+}
+
+export async function rewriteClause(findingId: number): Promise<RewriteClauseResponse> {
+  return request<RewriteClauseResponse>("/audit/rewrite", {
     method: "POST",
-    body: JSON.stringify({ finding_id: findingId, clause_text: clauseText })
+    body: JSON.stringify({ finding_id: findingId })
   });
 }
 
 // --- AUTH ---
 
-export async function login(email: string, password: string): Promise<any> {
-  const data = await request<any>("/auth/login", {
+export async function login(email: string, password: string): Promise<AuthTokenResponse> {
+  const raw = await request<unknown>("/auth/login", {
     method: "POST",
     body: JSON.stringify({ email, password }),
   });
-  if (typeof window !== "undefined" && data?.access_token) {
-    localStorage.setItem("auditweave_token", data.access_token);
-    localStorage.setItem("auditweave_role", data.role || "user");
-    localStorage.setItem("auditweave_email", email);
-  }
+  const data = parseAuthTokenResponse(raw);
+  saveAuthSession(data);
   return data;
 }
 
-export async function register(email: string, password: string): Promise<any> {
-  return request<any>("/auth/register", {
+export async function register(firstName: string, email: string, password: string): Promise<RegisteredUserResponse> {
+  const raw = await request<unknown>("/auth/register", {
     method: "POST",
-    body: JSON.stringify({ email, password }),
+    body: JSON.stringify({ first_name: firstName, email, password }),
   });
+  return parseRegisteredUserResponse(raw);
+}
+
+export async function getCurrentUser(): Promise<UserProfileResponse> {
+  const raw = await request<unknown>("/auth/me");
+  return parseUserProfileResponse(raw);
+}
+
+async function requestBlob(endpoint: string): Promise<Blob> {
+  const res = await fetch(`${API_BASE}${endpoint}`, { headers: getHeaders(true) });
+  if (!res.ok) await throwResponseError(res);
+  return res.blob();
+}
+
+function saveBlob(blob: Blob, filename: string): void {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+}
+
+export async function downloadAuditReport(auditId: string | number): Promise<void> {
+  saveBlob(await requestBlob(`/report/${auditId}`), `audit-report-${auditId}.pdf`);
+}
+
+export async function downloadComparisonReport(auditIdA: string | number, auditIdB: string | number): Promise<void> {
+  saveBlob(
+    await requestBlob(`/compare/${auditIdA}/${auditIdB}/report`),
+    `audit-comparison-${auditIdA}-${auditIdB}.pdf`,
+  );
 }
 
 export async function getDashboard(): Promise<any> {

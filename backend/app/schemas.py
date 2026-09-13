@@ -1,16 +1,42 @@
-from pydantic import BaseModel, EmailStr, Field
-from typing import List, Optional, Dict, Any
+from pydantic import BaseModel, EmailStr, Field, field_validator
+from typing import cast
+from typing import List, Literal, Optional, Dict, Any
 from datetime import datetime
 
 # User Schemas
 class UserBase(BaseModel):
     email: EmailStr
 
+    @field_validator("email", mode="after")
+    @classmethod
+    def normalize_email(cls, value: EmailStr) -> EmailStr:
+        return cast(EmailStr, str(value).strip().lower())
+
 class UserCreate(UserBase):
-    password: str
+    first_name: str = Field(min_length=1, max_length=80)
+    password: str = Field(min_length=12, max_length=128)
+
+    @field_validator("first_name")
+    @classmethod
+    def normalize_first_name(cls, value: str) -> str:
+        normalized = " ".join(value.strip().split())
+        if not normalized:
+            raise ValueError("First name is required.")
+        return normalized
+
+    @field_validator("password")
+    @classmethod
+    def validate_password(cls, value: str) -> str:
+        if not value.strip() or len(set(value)) < 3:
+            raise ValueError("Password is too weak.")
+        return value
+
+class UserLogin(UserBase):
+    password: str = Field(min_length=1, max_length=128)
 
 class UserResponse(UserBase):
     id: int
+    first_name: Optional[str] = None
     role: str
     created_at: datetime
     
@@ -141,13 +167,15 @@ class CompareRequest(BaseModel):
 
 class RewriteRequest(BaseModel):
     finding_id: int
-    clause_text: str
+    # clause_text has been removed: the server reloads evidence from the DB.
+    # The frontend must never supply policy wording as source-of-truth.
 
 class RewriteResponse(BaseModel):
     finding_id: int
     original_text: str
     rewritten_text: str
     disclaimer: str
+    generation_mode: Literal["ai", "template"]
 
 class CopilotRequest(BaseModel):
     audit_id: int
@@ -168,4 +196,3 @@ class BatchAuditItem(BaseModel):
 
 class BatchAuditRequest(BaseModel):
     items: List[BatchAuditItem]
-

@@ -15,6 +15,16 @@ def test_clean_extracted_text():
     cleaned = clean_extracted_text(raw)
     assert "Privacy Policy" in cleaned
     assert "Acceptable" in cleaned
+    assert "Policy\n\nAcceptable" in cleaned
+
+
+def test_clean_extracted_text_removes_reader_metadata():
+    raw = "Title: Example Policy\nURL Source: https://example.com/privacy\nMarkdown Content:\n## Privacy Policy\n\nWe protect your data."
+    cleaned = clean_extracted_text(raw)
+    assert "Title:" not in cleaned
+    assert "URL Source:" not in cleaned
+    assert cleaned.startswith("## Privacy Policy")
+    assert "Policy\n\nWe protect" in cleaned
 
 def test_chunk_section():
     # Test text chunker

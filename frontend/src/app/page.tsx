@@ -51,7 +51,7 @@ export default function LandingPage() {
           </div>
           
           <h1 className="text-4xl sm:text-5xl md:text-6xl font-extrabold tracking-tight leading-tight text-brand-deep">
-            India's AI-Powered <br className="hidden sm:inline" />
+            India&apos;s AI-Powered <br className="hidden sm:inline" />
             <span className="text-brand-green">
               DPDP Compliance
             </span> <br />
@@ -130,7 +130,7 @@ export default function LandingPage() {
                     <span className="text-brand-green font-bold">PASS (92%)</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-brand-deep/70 font-medium">Children's Data Restrictions</span>
+                    <span className="text-brand-deep/70 font-medium">Children&apos;s Data Restrictions</span>
                     <span className="text-red-500 font-bold">FAIL (20%)</span>
                   </div>
                   <div className="flex items-center justify-between text-xs">
@@ -209,7 +209,7 @@ export default function LandingPage() {
               </div>
             </div>
             <p className="leading-relaxed text-[11px] text-brand-deep/60 max-w-xs font-medium">
-              India's Digital Personal Data Protection (DPDP) Act 2023 compliance intelligence platform. Built for compliance officers, legal practitioners, and auditing teams.
+              India&apos;s Digital Personal Data Protection (DPDP) Act 2023 compliance intelligence platform. Built for compliance officers, legal practitioners, and auditing teams.
             </p>
           </div>
           

@@ -1,7 +1,8 @@
 import datetime
+import logging
 import os
 import google.generativeai as genai
-from typing import List, Optional
+from typing import List, Literal, Optional
 from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
@@ -11,18 +12,29 @@ from sqlalchemy import desc, func
 from .database import engine, Base, get_db
 from .models import User, Company, Policy, Audit, Finding, Benchmark, AuditLog
 from .schemas import (
-    UserCreate, UserResponse, Token, TokenData, AuditRequest, AuditDetailResponse,
+    UserCreate, UserLogin, UserResponse, Token, TokenData, AuditRequest, AuditDetailResponse,
     AuditResponse, CompareRequest, RewriteRequest, RewriteResponse, CopilotRequest,
     CopilotResponse, BenchmarkResponse, BatchAuditRequest
 )
 from .auth import (
-    get_password_hash, verify_password, create_access_token, get_current_user,
-    get_current_user_optional, ACCESS_TOKEN_EXPIRE_MINUTES
+    get_password_hash, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
+)
+from .services.user_auth import (
+    AuthDatabaseError, EmailAlreadyRegisteredError, authenticate_user, create_user
 )
 from .services.text_extractor import extract_text_from_url, extract_text_from_pdf, extract_text_from_docx
 from .services.rule_engine import HybridComplianceEngine
 from .services.gemini import analyze_policy_with_gemini, HAS_GEMINI_KEY
 from .services.pdf_generator import generate_audit_pdf, generate_comparison_pdf
+from .services.rewrite import (
+    build_rewrite_prompt,
+    build_safe_fallback,
+    clean_model_rewrite,
+    extract_clause_context,
+    is_finding_eligible_for_rewrite,
+)
+
+logger = logging.getLogger(__name__)
 
 # Initialize FastAPI App
 app = FastAPI(
@@ -36,6 +48,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
     "http://localhost:3000",
+    "http://127.0.0.1:3000",
     "https://your-vercel-app.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
@@ -68,6 +81,7 @@ def startup_populate_benchmarks():
         if not existing_admin:
             admin_user = User(
                 email="admin@AuditWeave.ai",
+                first_name="Admin",
                 password_hash=get_password_hash("AuditWeave_admin_2026"),
                 role="admin"
             )
@@ -82,28 +96,29 @@ def startup_populate_benchmarks():
 
 @app.post("/api/auth/register", response_model=UserResponse)
 def register(user_in: UserCreate, db: Session = Depends(get_db)):
-    existing = db.query(User).filter(User.email == user_in.email).first()
-    if existing:
+    try:
+        return create_user(db, str(user_in.email), user_in.password, user_in.first_name)
+    except EmailAlreadyRegisteredError:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_409_CONFLICT,
             detail="A user with this email is already registered."
         )
-    hashed_pwd = get_password_hash(user_in.password)
-    db_user = User(email=user_in.email, password_hash=hashed_pwd, role="user")
-    db.add(db_user)
-    db.commit()
-    db.refresh(db_user)
-    
-    log = AuditLog(action=f"User registration: {db_user.email}", user_id=db_user.id)
-    db.add(log)
-    db.commit()
-    
-    return db_user
+    except AuthDatabaseError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Account service is temporarily unavailable. Please try again."
+        )
 
 @app.post("/api/auth/login", response_model=Token)
-def login(user_in: UserCreate, db: Session = Depends(get_db)):
-    user = db.query(User).filter(func.lower(User.email) == user_in.email.lower()).first()
-    if not user or not verify_password(user_in.password, user.password_hash):
+def login(user_in: UserLogin, db: Session = Depends(get_db)):
+    try:
+        user = authenticate_user(db, str(user_in.email), user_in.password)
+    except AuthDatabaseError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Authentication service is temporarily unavailable. Please try again."
+        )
+    if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Incorrect email or password",
@@ -124,6 +139,11 @@ def login(user_in: UserCreate, db: Session = Depends(get_db)):
         "role": user.role,
         "email": user.email
     }
+
+
+@app.get("/api/auth/me", response_model=UserResponse)
+def get_my_profile(current_user: User = Depends(get_current_user)):
+    return current_user
 
 
 # --- AUDIT COMPLIANCE ROUTES ---
@@ -240,7 +260,7 @@ def perform_compliance_audit(company_name: str, industry: str, policy_text: str,
     return audit
 
 @app.post("/api/audit", response_model=AuditDetailResponse)
-def audit_policy(request: AuditRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_optional)):
+def audit_policy(request: AuditRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     policy_text = ""
     
     if request.policy_url:
@@ -282,7 +302,7 @@ def audit_policy_file(
     industry: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user_optional)
+    current_user: User = Depends(get_current_user)
 ):
     filename = file.filename.lower()
     file_bytes = file.file.read()
@@ -322,7 +342,7 @@ def audit_policy_file(
 
 
 @app.post("/api/audit/batch")
-def audit_policy_batch(request: BatchAuditRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_optional)):
+def audit_policy_batch(request: BatchAuditRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not request.items or len(request.items) == 0:
         raise HTTPException(status_code=400, detail="At least one company must be provided for batch audit.")
         
@@ -409,8 +429,8 @@ def audit_policy_batch(request: BatchAuditRequest, db: Session = Depends(get_db)
 # --- EXPLAINABLE GRC AND AUDIT RETRIEVAL ---
 
 @app.get("/api/audit/history", response_model=List[AuditResponse])
-def get_audit_history(db: Session = Depends(get_db)):
-    audits = db.query(Audit).order_by(desc(Audit.created_at)).all()
+def get_audit_history(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    audits = db.query(Audit).filter(Audit.created_by == current_user.id).order_by(desc(Audit.created_at)).all()
     for a in audits:
         policy = db.query(Policy).filter(Policy.id == a.policy_id).first()
         company = db.query(Company).filter(Company.id == policy.company_id).first()
@@ -420,8 +440,8 @@ def get_audit_history(db: Session = Depends(get_db)):
     return audits
 
 @app.get("/api/audit/{audit_id}", response_model=AuditDetailResponse)
-def get_audit_detail(audit_id: int, db: Session = Depends(get_db)):
-    audit = db.query(Audit).filter(Audit.id == audit_id).first()
+def get_audit_detail(audit_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    audit = db.query(Audit).filter(Audit.id == audit_id, Audit.created_by == current_user.id).first()
     if not audit:
         raise HTTPException(status_code=404, detail="Audit report not found.")
         
@@ -435,8 +455,8 @@ def get_audit_detail(audit_id: int, db: Session = Depends(get_db)):
     return audit
 
 @app.delete("/api/audit/{audit_id}")
-def delete_audit(audit_id: int, db: Session = Depends(get_db)):
-    audit = db.query(Audit).filter(Audit.id == audit_id).first()
+def delete_audit(audit_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    audit = db.query(Audit).filter(Audit.id == audit_id, Audit.created_by == current_user.id).first()
     if not audit:
         raise HTTPException(status_code=404, detail="Audit report not found.")
         
@@ -449,8 +469,8 @@ def delete_audit(audit_id: int, db: Session = Depends(get_db)):
 # --- PDF REPORT GENERATOR ---
 
 @app.get("/api/report/{audit_id}")
-def download_pdf_report(audit_id: int, db: Session = Depends(get_db)):
-    audit = db.query(Audit).filter(Audit.id == audit_id).first()
+def download_pdf_report(audit_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    audit = db.query(Audit).filter(Audit.id == audit_id, Audit.created_by == current_user.id).first()
     if not audit:
         raise HTTPException(status_code=404, detail="Audit not found.")
         
@@ -503,8 +523,8 @@ def download_pdf_report(audit_id: int, db: Session = Depends(get_db)):
 # --- DASHBOARD & BENCHMARKS ---
 
 @app.get("/api/dashboard")
-def get_dashboard_summary(db: Session = Depends(get_db)):
-    audits = db.query(Audit).order_by(desc(Audit.created_at)).all()
+def get_dashboard_summary(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    audits = db.query(Audit).filter(Audit.created_by == current_user.id).order_by(desc(Audit.created_at)).all()
     total_audits = len(audits)
     
     if total_audits == 0:
@@ -526,7 +546,8 @@ def get_dashboard_summary(db: Session = Depends(get_db)):
     avg_score = round(sum(a.compliance_score for a in audits) / total_audits, 1)
     
     severities = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0, "Informational": 0}
-    findings = db.query(Finding).all()
+    audit_ids = [audit.id for audit in audits]
+    findings = db.query(Finding).filter(Finding.audit_id.in_(audit_ids)).all()
     for f in findings:
         if f.severity in severities:
             severities[f.severity] += 1
@@ -554,7 +575,7 @@ def get_dashboard_summary(db: Session = Depends(get_db)):
     best_performing = "Grievance Redressal"
     min_count = 9999
     for p in pillars:
-        cnt = db.query(Finding).filter(Finding.pillar == p).count()
+        cnt = db.query(Finding).filter(Finding.audit_id.in_(audit_ids), Finding.pillar == p).count()
         if cnt < min_count:
             min_count = cnt
             best_performing = p
@@ -614,9 +635,9 @@ def get_leaderboard(db: Session = Depends(get_db)):
 # --- POLICY COMPARER & PDF EXPORTER ---
 
 @app.post("/api/compare")
-def compare_policies(request: CompareRequest, db: Session = Depends(get_db)):
-    audit_a = db.query(Audit).filter(Audit.id == request.audit_id_a).first()
-    audit_b = db.query(Audit).filter(Audit.id == request.audit_id_b).first()
+def compare_policies(request: CompareRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    audit_a = db.query(Audit).filter(Audit.id == request.audit_id_a, Audit.created_by == current_user.id).first()
+    audit_b = db.query(Audit).filter(Audit.id == request.audit_id_b, Audit.created_by == current_user.id).first()
     
     if not audit_a or not audit_b:
         raise HTTPException(status_code=404, detail="One or both audits could not be found.")
@@ -654,9 +675,125 @@ def compare_policies(request: CompareRequest, db: Session = Depends(get_db)):
     }
 
 @app.get("/api/compare/{audit_id_a}/{audit_id_b}/report")
-def download_comparison_report(audit_id_a: int, audit_id_b: int, db: Session = Depends(get_db)):
-    audit_a = db.query(Audit).filter(Audit.id == audit_id_a).first()
-    audit_b = db.query(Audit).filter(Audit.id == audit_id_b).first()
+def download_comparison_report(audit_id_a: int, audit_id_b: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    audit_a = db.query(Audit).filter(Audit.id == audit_id_a, Audit.created_by == current_user.id).first()
+    audit_b = db.query(Audit).filter(Audit.id == audit_id_b, Audit.created_by == current_user.id).first()
+    
+    if not audit_a or not audit_b:
+        raise HTTPException(status_code=404, detail="One or both audits could not be found.")
+        
+    policy_a = db.query(Policy).filter(Policy.id == audit_a.policy_id).first()
+    company_a = db.query(Company).filter(Company.id == policy_a.company_id).first()
+    
+    policy_b = db.query(Policy).filter(Policy.id == audit_b.policy_id).first()
+    company_b = db.query(Company).filter(Company.id == policy_b.company_id).first()
+    
+    issues_a = [f.issue for f in audit_a.findings if f.severity in ["Critical", "High", "Medium"]]
+    issues_b = [f.issue for f in audit_b.findings if f.severity in ["Critical", "High", "Medium"]]
+    
+    compliance_winner = company_a.name if audit_a.compliance_score >= audit_b.compliance_score else company_b.name
+    gap_analysis = f"{company_a.name} scores {audit_a.compliance_score}/100 compared to {company_b.name}'s {audit_b.compliance_score}/100. " \
+                   f"{company_a.name} is stronger in {audit_a.findings[0].pillar if audit_a.findings else 'Consent'} compliance, " \
+                   f"while {company_b.name} exhibits critical vulnerabilities in {audit_b.findings[0].pillar if audit_b.findings else 'Notice'}."
+                   
+    compare_data = {
+        "winner": compliance_winner,
+        "gap_analysis": gap_analysis
+    }
+    
+    comp_a = {
+        "name": company_a.name,
+        "score": audit_a.compliance_score,
+        "status": audit_a.status,
+        "findings_count": len(audit_a.findings),
+        "primary_gaps": issues_a[:3]
+    }
+    comp_b = {
+        "name": company_b.name,
+        "score": audit_b.compliance_score,
+        "status": audit_b.status,
+        "findings_count": len(audit_b.findings),
+        "primary_gaps": issues_b[:3]
+    }
+    
+    pdf_bytes = generate_comparison_pdf(compare_data, comp_a, comp_b)
+    
+    filename = f"DPDP_Comparison_{company_a.name.replace(' ', '_')}_vs_{company_b.name.replace(' ', '_')}.pdf"
+    
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f"attachment; filename={filename}"
+        }
+    )
+
+
+# --- KNOWLEDGE BASE (DPDP ACT 2023 - 100% ACCURATE MAPPINGS) ---
+
+DPDP_KB = {
+    "section_5": {
+        "title": "Section 5 - Notice",
+        "explanation": "Before or at the time of seeking consent, data fiduciaries must present a clear notice written in plain, easily understandable language. The notice must detail what personal data is collected, the specific purpose of processing, and explain the rights of the Data Principal to withdraw consent, correct data, or file grievances.",
+        "penalties": "Up to ₹150 Crore for failing to present appropriate notice.",
+        "best_practice": "Use a tabular layout listing each permission requested paired with a corresponding business purpose. Avoid generic 'we collect information to improve our services'."
+    },
+    "section_6": {
+        "title": "Section 6 - Consent",
+        "explanation": "Consent of the Data Principal must be free, specific, informed, unconditional, and unambiguous. It must be indicated by a clear affirmative action. Any part of the consent that violates the provisions of this Act is invalid. Consent must also be granular (not bundled with terms of service) and withdrawable at any time.",
+        "penalties": "Up to ₹50 Crore for failing to provide granular consent mechanisms.",
+        "best_practice": "Implement explicit opt-in checkboxes on signup sheets. Provide a dedicated 'Withdraw Consent' button in profile settings."
+    },
+    "section_8": {
+        "title": "Section 8 - Obligations of Data Fiduciary",
+        "explanation": "Data Fiduciaries are responsible for ensuring personal data is processed accurately, safeguarded with reasonable security safeguards to prevent breaches, and erased once the purpose of collection is fulfilled.",
+        "penalties": "Up to ₹250 Crore for failing to implement security safeguards, resulting in data breaches.",
+        "best_practice": "Encrypt database columns holding PII at rest. Implement automated data lifecycle retention rules."
+    },
+    "section_9": {
+        "title": "Section 9 - Processing of Personal Data of Children",
+        "explanation": "Data fiduciaries must obtain verifiable parental consent before processing any personal data of a child (under 18 years) or a person with disability. Fiduciaries are strictly prohibited from engaging in any tracking, behavioral monitoring, or targeted advertising directed at children.",
+        "penalties": "Up to ₹200 Crore for breaching children's data obligations.",
+        "best_practice": "Implement age gates during registration. Flag and exclude accounts under 18 from marketing pixel triggers."
+    },
+    "section_11": {
+        "title": "Section 11 - Right to Access Information About Personal Data",
+        "explanation": "The Data Principal has the right to obtain from the Data Fiduciary a summary of personal data being processed, the identities of all other Data Fiduciaries and Data Processors with whom the personal data has been shared, and any other information as may be prescribed.",
+        "penalties": "Up to ₹10 Crore for refusing to provide details of processed data to Data Principals.",
+        "best_practice": "Build a secure data export dashboard allowing users to view and download a copy of all database records linked to their account."
+    },
+    "section_12": {
+        "title": "Section 12 - Right to Correction, Completion, Erasure of Personal Data",
+        "explanation": "A Data Principal has the right to correction, completion, and erasure of their personal data. The Data Fiduciary must correct, complete, or erase the data upon receiving a valid request, unless retention is necessary for legal purposes.",
+        "penalties": "Up to ₹50 Crore for refusing to correct or erase user data upon valid requests.",
+        "best_practice": "Provide self-service buttons inside settings to correct profile details and request account deletion."
+    },
+    "section_13": {
+        "title": "Section 13 - Right to Grievance Redressal",
+        "explanation": "A Data Principal has the right to register a grievance with the Data Fiduciary regarding any act or omission in processing their data. Fiduciaries must set up an efficient redressal mechanism and publish the contact details of a Nodal/Grievance Officer.",
+        "penalties": "Up to ₹10 Crore for missing Grievance Redressal channels.",
+        "best_practice": "State the Grievance Redressal Officer's name, email, and response SLA clearly at the bottom of the privacy notice."
+    },
+    "section_16": {
+        "title": "Section 16 - Processing of Personal Data Outside India",
+        "explanation": "The Central Government may restrict the transfer of personal data by a Data Fiduciary for processing to such country or territory outside India as may be notified. Disclosures regarding cross-border transfers are mandatory.",
+        "penalties": "Up to ₹10 Crore for violating cross-border data transfer blacklists or notice requirements.",
+        "best_practice": "Audit cloud server locations and maintain standard contractual clauses with foreign sub-processors."
+    }
+}
+
+@app.get("/api/kb")
+def search_knowledge_base(query: Optional[str] = Query(None)):
+    if not query:
+        return DPDP_KB
+    query = query.lower()
+    results = {}
+    for sec, details in DPDP_KB.items():
+        if query in sec or query in details["title"].lower() or query in details["explanation"].lower():
+            results[sec] = details
+    return results
+
+
     
     if not audit_a or not audit_b:
         raise HTTPException(status_code=404, detail="One or both audits could not be found.")
@@ -776,8 +913,8 @@ def search_knowledge_base(query: Optional[str] = Query(None)):
 # --- AI COPILOT & POLICY REWRITE ---
 
 @app.post("/api/audit/copilot", response_model=CopilotResponse)
-def audit_copilot(request: CopilotRequest, db: Session = Depends(get_db)):
-    audit = db.query(Audit).filter(Audit.id == request.audit_id).first()
+def audit_copilot(request: CopilotRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    audit = db.query(Audit).filter(Audit.id == request.audit_id, Audit.created_by == current_user.id).first()
     if not audit:
         raise HTTPException(status_code=404, detail="Audit not found.")
         
@@ -830,10 +967,16 @@ def audit_copilot(request: CopilotRequest, db: Session = Depends(get_db)):
         )
     elif "grievance" in user_msg or "section 13" in user_msg:
         reply = (
-            f"Under Section 13, **{company.name}** is required to publish the contact details of a Grievance Officer. "
-            "We detected that this details is missing or unclear. You should append this wording to the footer of the policy: "
-            "\"If you have any questions or complaints regarding our data processing, please contact our Nodal Grievance Redressal Officer, "
-            "Mr. Ramesh Kumar, at grievance@company.com. We commit to responding to all grievances within 15 business days.\""
+            f"Under Section 13, **{company.name}** is required to publish the contact "
+            "details of a Grievance Redressal Officer. We detected that this information "
+            "is missing or unclear. You should add a grievance section to the policy with "
+            "wording similar to: \"For any questions or complaints about our processing of "
+            "your personal data, please contact our Grievance Redressal Officer at "
+            "[GRIEVANCE EMAIL ADDRESS] or through [GRIEVANCE PORTAL URL]. We will "
+            "acknowledge and resolve grievances in accordance with our published grievance "
+            "procedure and applicable law.\" "
+            "Replace the bracketed placeholders with your organisation's verified contact "
+            "details before publishing."
         )
     else:
         reply = (
@@ -841,7 +984,7 @@ def audit_copilot(request: CopilotRequest, db: Session = Depends(get_db)):
             f"The primary issues are centered on **{audit.findings[0].pillar if audit.findings else 'Consent'}**. "
             "Would you like me to draft specific compliant text for your notice, or explain the penalties associated with these findings?"
         )
-        
+
     return {
         "response": reply,
         "suggested_actions": [
@@ -852,72 +995,102 @@ def audit_copilot(request: CopilotRequest, db: Session = Depends(get_db)):
     }
 
 @app.post("/api/audit/rewrite", response_model=RewriteResponse)
-def audit_rewrite(request: RewriteRequest, db: Session = Depends(get_db)):
-    finding = db.query(Finding).filter(Finding.id == request.finding_id).first()
+def audit_rewrite(
+    request: RewriteRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    # Atomically verify finding existence and ownership via JOIN.
+    # A finding_id from another user's audit returns None (IDOR protection).
+    finding = (
+        db.query(Finding)
+        .join(Audit, Finding.audit_id == Audit.id)
+        .filter(
+            Finding.id == request.finding_id,
+            Audit.created_by == current_user.id,
+        )
+        .first()
+    )
     if not finding:
         raise HTTPException(status_code=404, detail="Finding not found.")
-        
-    original = request.clause_text if request.clause_text else (finding.evidence_extract or "Consent is implied by using the site.")
-    
-    system_prompt = f"""
-    You are 'AuditWeave Rewrite AI'.
-    We found a DPDP Act 2023 compliance gap:
-    Pillar: {finding.pillar}
-    Issue: {finding.issue}
-    Legal Section: {finding.dpdp_section}
-    Original Non-compliant wording: "{original}"
-    
-    Rewrite this privacy policy clause to make it fully compliant with the DPDP Act 2023. Keep it clear, granular, explicit, and legally sound.
-    Return ONLY the rewritten text, with no preamble.
-    """
-    
-    rewritten = ""
+
+    # Centralised eligibility guard — enforced server-side regardless of UI state.
+    if not is_finding_eligible_for_rewrite(finding):
+        raise HTTPException(
+            status_code=400,
+            detail="This finding is already compliant and does not require a rewrite.",
+        )
+
+    # Load the parent policy text server-side for richer clause context.
+    # The client NEVER provides policy wording; the DB is the sole source of truth.
+    policy_text: str = ""
+    try:
+        if finding.audit and finding.audit.policy:
+            policy_text = finding.audit.policy.policy_text or ""
+    except Exception:
+        pass  # Relationship unavailable; extract_clause_context falls back safely.
+
+    # Recover the original clause and bounded surrounding context from DB indexes.
+    original_clause, surrounding_context = extract_clause_context(
+        policy_text=policy_text,
+        evidence_extract=finding.evidence_extract,
+        start_index=finding.evidence_start_index,
+        end_index=finding.evidence_end_index,
+    )
+
+    system_prompt = build_rewrite_prompt(
+        pillar=finding.pillar,
+        issue=finding.issue,
+        dpdp_section=finding.dpdp_section,
+        reason=finding.reason,
+        original_clause=original_clause,
+        surrounding_context=surrounding_context,
+    )
+
+    rewritten: str = ""
+    generation_mode: Literal["ai", "template"] = "template"
+
     if HAS_GEMINI_KEY:
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            response = model.generate_content(system_prompt)
-            rewritten = response.text.strip()
-        except Exception:
-            pass
-            
+            model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-1.5-flash"))
+            response = model.generate_content(
+                system_prompt,
+                generation_config={"max_output_tokens": 600, "temperature": 0.3},
+            )
+            raw = clean_model_rewrite(response.text or "")
+            if len(raw) >= 40:
+                rewritten = raw
+                generation_mode = "ai"
+        except Exception as exc:
+            logger.warning("AI rewrite failed for finding %s: %s", finding.id, exc)
+
     if not rewritten:
-        if finding.pillar == "Consent":
-            rewritten = (
-                "We process your personal data only on the basis of your explicit, specific, granular, and informed opt-in consent. "
-                "You have the right to withdraw your consent at any time as easily as it was granted by accessing your account settings "
-                "or contacting our support desk. Withdrawal of consent does not affect the lawfulness of processing based on consent before its withdrawal."
-            )
-        elif finding.pillar == "Grievance Redressal":
-            rewritten = (
-                "For any grievances, complaints, or inquiries regarding personal data processing, you may contact our designated "
-                "Nodal Grievance Redressal Officer, Ms. Ananya Sen, at privacy-officer@company.com. We acknowledge complaints within 48 hours "
-                "and resolve grievances within a maximum period of 30 days as mandated under Section 13 of the DPDP Act 2023."
-            )
-        elif finding.pillar == "Children's Data":
-            rewritten = (
-                "We do not knowingly collect or process personal data of children under 18 years of age or individuals with disabilities "
-                "without obtaining verifiable parental/guardian consent. We do not track, profile, or target advertisements at children."
-            )
-        else:
-            rewritten = (
-                "We process personal data transparently, for specified lawful purposes under a valid notice in compliance with "
-                "the Digital Personal Data Protection Act 2023. Data is retained only for the duration required to fulfill the "
-                "original purposes, after which it is permanently erased."
-            )
-            
-    disclaimer = "AI-generated compliance draft only. This draft does not constitute formal legal advice. Please verify with a qualified attorney before publishing."
-    
+        rewritten = build_safe_fallback(
+            pillar=finding.pillar,
+            issue=finding.issue,
+            original_text=original_clause,
+        )
+        generation_mode = "template"
+
+    disclaimer = (
+        "Drafting assistance only; this is not legal advice or a compliance guarantee. "
+        "Replace every square-bracket placeholder with verified organisation details and "
+        "have the clause reviewed by a qualified professional before publishing."
+    )
+
     return {
         "finding_id": finding.id,
-        "original_text": original,
+        "original_text": original_clause,
         "rewritten_text": rewritten,
-        "disclaimer": disclaimer
+        "disclaimer": disclaimer,
+        "generation_mode": generation_mode,
     }
+
 
 # --- RESEARCH MODE ---
 
 @app.post("/api/research")
-def run_batch_research(request: List[str], db: Session = Depends(get_db)):
+def run_batch_research(request: List[str], db: Session = Depends(get_db), _current_user: User = Depends(get_current_user)):
     results = []
     
     companies_mock = {

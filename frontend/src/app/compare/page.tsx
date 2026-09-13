@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { GitCompare, ShieldAlert, Award, FileText, ArrowRight, ShieldCheck, Activity, FileDown } from "lucide-react";
-import { getAuditHistory, compareAudits, isAuthenticated } from "@/lib/api";
+import { downloadComparisonReport, getAuditHistory, compareAudits, isAuthenticated } from "@/lib/api";
 
 export default function ComparePage() {
   const router = useRouter();
@@ -62,9 +62,6 @@ export default function ComparePage() {
       </div>
     );
   }
-
-  // Comparative report download endpoint URL
-  const comparisonReportUrl = `http://localhost:8000/api/compare/${auditIdA}/${auditIdB}/report`;
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-8 bg-[#0D3A35] min-h-screen">
@@ -149,13 +146,14 @@ export default function ComparePage() {
 
             {/* Export Comparative PDF Report */}
             <div className="md:col-span-3 text-center">
-              <a
-                href={comparisonReportUrl}
+              <button
+                type="button"
+                onClick={() => void downloadComparisonReport(auditIdA, auditIdB)}
                 className="inline-flex items-center space-x-2 text-xs font-bold text-white bg-emerald-600 hover:bg-emerald-300 px-5 py-3 rounded-xl transition shadow-lg shadow-emerald-600/15"
               >
                 <FileDown className="h-4 w-4" />
                 <span>Export Report PDF</span>
-              </a>
+              </button>
             </div>
           </div>
 
