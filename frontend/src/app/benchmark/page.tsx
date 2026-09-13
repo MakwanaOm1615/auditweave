@@ -44,7 +44,7 @@ export default function BenchmarkPage() {
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8 bg-[#0D3A35] min-h-screen">
+    <div className="p-6 md:p-8 lg:p-12 w-full max-w-[1600px] mx-auto space-y-8 bg-[#0D3A35] min-h-screen">
       <div>
         <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
           <Trophy className="h-7 w-7 text-emerald-300" />
@@ -78,7 +78,7 @@ export default function BenchmarkPage() {
                 {leaderboard.map((comp) => (
                   <tr key={comp.rank} className="text-slate-300 hover:bg-slate-800/10">
                     <td className="py-3.5 font-bold font-mono">
-                      {comp.rank === 1 ? "🏆 1" : comp.rank === 2 ? "🥈 2" : comp.rank === 3 ? "🥉 3" : comp.rank}
+                      {comp.rank === 1 ? "1" : comp.rank === 2 ? "2" : comp.rank === 3 ? "3" : comp.rank}
                     </td>
                     <td className="py-3.5 font-semibold text-slate-100">{comp.company_name}</td>
                     <td className="py-3.5 text-slate-400">{comp.industry}</td>

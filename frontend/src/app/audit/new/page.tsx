@@ -129,7 +129,7 @@ export default function NewAuditPage() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-8 min-h-screen">
+    <div className="p-6 md:p-8 lg:p-12 w-full max-w-[1600px] mx-auto space-y-8 min-h-screen">
       <div>
         <h1 className="text-3xl font-extrabold text-brand-deep tracking-tight">Audit New Policy</h1>
         <p className="text-sm text-brand-deep/70 mt-1 font-medium">

@@ -81,7 +81,7 @@ export default function ResearchPage() {
   if (!mounted) return null;
 
   return (
-    <div className="p-6 max-w-5xl mx-auto space-y-8 bg-[#0D3A35] min-h-screen">
+    <div className="p-6 md:p-8 lg:p-12 w-full max-w-[1600px] mx-auto space-y-8 bg-[#0D3A35] min-h-screen">
       <div>
         <h1 className="text-3xl font-extrabold text-white tracking-tight flex items-center gap-2">
           <Layers className="h-7 w-7 text-emerald-300" />
@@ -243,7 +243,7 @@ export default function ResearchPage() {
             <div className="mt-8 border-t border-slate-800/60 pt-6 space-y-4">
               <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider">LinkedIn / Medium Summary Block</h3>
               <div className="p-4 bg-slate-950/60 border border-slate-900 rounded-xl text-[11px] text-slate-400 font-mono leading-relaxed relative">
-                <p className="font-bold text-slate-200">📊 INDIA DPDP ACT 2023 COMPLIANCE BENCHMARK REPORT 2026</p>
+                <p className="font-bold text-slate-200">INDIA DPDP ACT 2023 COMPLIANCE BENCHMARK REPORT 2026</p>
                 <p className="mt-2">We audited {report.audit_count} leading Indian platforms against the statutory pillars of the DPDP Act 2023. Here are the key findings:</p>
                 <ul className="list-disc pl-5 mt-2 space-y-1">
                   <li>Average Market Score: {report.average_market_score}% Compliance.</li>
@@ -252,7 +252,7 @@ export default function ResearchPage() {
                 </ul>
                 <p className="mt-2">Audit generated via AuditWeave Compliance Platform.</p>
                 <button
-                  onClick={() => navigator.clipboard.writeText(`📊 INDIA DPDP ACT 2023 COMPLIANCE BENCHMARK REPORT 2026\n\nWe audited ${report.audit_count} leading Indian platforms against the statutory pillars of the DPDP Act 2023. Here are the key findings:\n- Average Market Score: ${report.average_market_score}% Compliance.\n- Compliance Leader: ${report.winner}.\n- Common gaps: Children's parental consent, opt-in notice decoupling, Nodal Grievance Redressal Officer contact details.\n\nAudit generated via AuditWeave Compliance Platform.`)}
+                  onClick={() => navigator.clipboard.writeText(`INDIA DPDP ACT 2023 COMPLIANCE BENCHMARK REPORT 2026\n\nWe audited ${report.audit_count} leading Indian platforms against the statutory pillars of the DPDP Act 2023. Here are the key findings:\n- Average Market Score: ${report.average_market_score}% Compliance.\n- Compliance Leader: ${report.winner}.\n- Common gaps: Children's parental consent, opt-in notice decoupling, Nodal Grievance Redressal Officer contact details.\n\nAudit generated via AuditWeave Compliance Platform.`)}
                   className="absolute bottom-3 right-3 h-7 w-7 rounded bg-slate-900 border border-slate-800 flex items-center justify-center hover:bg-slate-800 text-slate-400 hover:text-white"
                   title="Copy to Clipboard"
                 >

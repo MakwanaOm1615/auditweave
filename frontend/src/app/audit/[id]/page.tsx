@@ -130,6 +130,37 @@ export default function AuditDetailsPage() {
     }
   };
 
+  const formatPolicySegment = (text: string) => {
+    if (!text) return text;
+    const formatted = text
+      .replace(/(\s)## /g, "$1\n\n## ")
+      .replace(/(\s)# /g, "$1\n\n# ")
+      .replace(/(\s)\* /g, "$1\n• ")
+      .replace(/\[Page /g, "\n\n[Page ");
+      
+    const tokens = formatted.split(/\*\*(.*?)\*\*/g);
+    if (tokens.length === 1) return formatted;
+    
+    return tokens.map((token, i) => {
+      if (i % 2 === 1) {
+        return <strong key={i} className="text-white font-bold">{token}</strong>;
+      }
+      return token;
+    });
+  };
+
+  const formatMarkdown = (text: string) => {
+    if (!text) return text;
+    const tokens = text.split(/\*\*(.*?)\*\*/g);
+    if (tokens.length === 1) return text;
+    return tokens.map((token, i) => {
+      if (i % 2 === 1) {
+        return <strong key={i} className="text-white font-bold">{token}</strong>;
+      }
+      return token;
+    });
+  };
+
   const renderHighlightedPolicyText = () => {
     const rawText = audit.policy_text || "";
     
@@ -143,9 +174,11 @@ export default function AuditDetailsPage() {
             const match = part.toLowerCase() === searchText.toLowerCase();
             return match ? (
               <mark key={idx} className="bg-yellow-500/30 text-yellow-200 border border-yellow-500/20 px-0.5 rounded">
-                {part}
+                {formatPolicySegment(part)}
               </mark>
-            ) : part;
+            ) : (
+              <span key={idx}>{formatPolicySegment(part)}</span>
+            );
           })}
         </div>
       );
@@ -161,18 +194,18 @@ export default function AuditDetailsPage() {
 
       return (
         <div className="whitespace-pre-line leading-relaxed font-sans text-sm text-slate-300">
-          {before}
+          {formatPolicySegment(before)}
           <mark className="highlight-target bg-emerald-600/10 text-emerald-300 border border-emerald-300/40 px-1 py-0.5 rounded font-medium inline-block glow-primary pulse-fast">
-            {target}
+            {formatPolicySegment(target)}
           </mark>
-          {after}
+          {formatPolicySegment(after)}
         </div>
       );
     }
 
     return (
       <div className="whitespace-pre-line leading-relaxed font-sans text-sm text-slate-300">
-        {rawText}
+        {formatPolicySegment(rawText)}
       </div>
     );
   };
@@ -193,7 +226,7 @@ export default function AuditDetailsPage() {
         <div className="flex items-center space-x-3">
           <Link
             href="/audit/new"
-            className="h-9 w-9 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition"
+            className="h-9 w-9 shrink-0 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white transition"
           >
             <ArrowLeft className="h-4 w-4" />
           </Link>
@@ -255,7 +288,7 @@ export default function AuditDetailsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         
         {/* Left Column: Clause Navigator (6 cols) */}
-        <div className="lg:col-span-6 flex flex-col justify-between glass-card rounded-2xl border border-slate-800/60 overflow-hidden min-h-[500px]">
+        <div className="lg:col-span-6 flex flex-col justify-between bg-[#0a0f1d]/90 backdrop-blur-md shadow-2xl rounded-2xl border border-slate-800/60 overflow-hidden min-h-[500px]">
           <div className="p-4 border-b border-slate-800/60 bg-slate-950/20 flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <BookOpen className="h-4 w-4 text-emerald-300" />
@@ -288,7 +321,7 @@ export default function AuditDetailsPage() {
         </div>
 
         {/* Right Column: Findings Breakdown (6 cols) */}
-        <div className="lg:col-span-6 glass-card rounded-2xl border border-slate-800/60 p-6 overflow-y-auto max-h-[620px] space-y-6">
+        <div className="lg:col-span-6 bg-[#0a0f1d]/90 backdrop-blur-md shadow-2xl rounded-2xl border border-slate-800/60 p-6 overflow-y-auto max-h-[620px] space-y-6">
           <div className="pb-3 border-b border-slate-800/40">
             <h2 className="text-lg font-bold text-slate-100">Compliance Gaps</h2>
             <p className="text-xs text-slate-400 mt-0.5">Click any gap to inspect policy evidence and recommended changes.</p>
@@ -375,7 +408,7 @@ export default function AuditDetailsPage() {
                           className="w-full py-2.5 bg-slate-900 border border-slate-800 hover:bg-slate-800/80 rounded-xl text-xs font-bold text-emerald-300 flex items-center justify-center space-x-1.5 transition cursor-pointer"
                         >
                           <Sparkles className="h-3.5 w-3.5 text-emerald-300" />
-                          <span>✨ Rewrite Clause with AI</span>
+                          <span>Rewrite Clause with AI</span>
                         </button>
                       </div>
                     </div>
@@ -391,9 +424,9 @@ export default function AuditDetailsPage() {
       {/* --- AI REWRITE MODAL --- */}
       {rewriteOpen && (
         <div className="fixed inset-0 z-50 bg-[#04060b]/80 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="w-full max-w-xl glass-card rounded-2xl border border-slate-800 glow-primary p-6 space-y-6">
+          <div className="w-full max-w-xl bg-[#0a0f1d]/95 backdrop-blur-md shadow-2xl rounded-2xl border border-slate-800 glow-primary p-6 space-y-6">
             <div className="flex items-center justify-between pb-3 border-b border-slate-800/50">
-              <h3 className="text-lg font-bold text-slate-100">✨ AI Policy Clause Rewrite</h3>
+              <h3 className="text-lg font-bold text-slate-100">AI Policy Clause Rewrite</h3>
               <button
                 onClick={() => setRewriteOpen(false)}
                 className="text-slate-400 hover:text-slate-200 text-xs"
@@ -420,10 +453,10 @@ export default function AuditDetailsPage() {
 
                 <div>
                   <label className="text-[10px] text-slate-500 font-bold uppercase tracking-wider block">
-                    ✨ DPDP Compliant draft
+                    DPDP Compliant draft
                   </label>
-                  <div className="mt-1 p-4 bg-slate-950/30 border border-emerald-900/60 rounded-lg text-xs text-emerald-200 font-mono leading-relaxed relative">
-                    {rewrittenText}
+                  <div className="mt-1 p-4 bg-slate-950/30 border border-emerald-900/60 rounded-lg text-xs text-emerald-200 font-mono leading-relaxed relative whitespace-pre-wrap">
+                    {formatMarkdown(rewrittenText)}
                     <button
                       onClick={() => navigator.clipboard.writeText(rewrittenText)}
                       className="absolute bottom-3 right-3 h-7 w-7 rounded bg-slate-900 border border-slate-800 flex items-center justify-center hover:bg-slate-800 text-slate-400 hover:text-white"
@@ -470,13 +503,13 @@ export default function AuditDetailsPage() {
                     {chat.sender === "user" ? "YOU" : "AUDITWEAVE AI"}
                   </span>
                   <div
-                    className={`p-3 rounded-2xl max-w-[85%] leading-relaxed ${
+                    className={`p-3 rounded-2xl max-w-[85%] leading-relaxed whitespace-pre-wrap ${
                       chat.sender === "user"
                         ? "bg-emerald-600 text-white rounded-tr-none text-xs"
                         : "bg-slate-900/80 border border-slate-850 text-slate-200 rounded-tl-none font-mono text-[11px]"
                     }`}
                   >
-                    {chat.text}
+                    {chat.sender === "copilot" ? formatMarkdown(chat.text) : chat.text}
                   </div>
                 </div>
               ))}

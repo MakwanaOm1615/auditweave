@@ -17,7 +17,7 @@ from .schemas import (
 )
 from .auth import (
     get_password_hash, verify_password, create_access_token, get_current_user,
-    get_current_user_optional, get_current_admin_user, ACCESS_TOKEN_EXPIRE_MINUTES
+    get_current_user_optional, ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from .services.text_extractor import extract_text_from_url, extract_text_from_pdf, extract_text_from_docx
 from .services.rule_engine import HybridComplianceEngine
@@ -102,7 +102,7 @@ def register(user_in: UserCreate, db: Session = Depends(get_db)):
 
 @app.post("/api/auth/login", response_model=Token)
 def login(user_in: UserCreate, db: Session = Depends(get_db)):
-    user = db.query(User).filter(User.email == user_in.email).first()
+    user = db.query(User).filter(func.lower(User.email) == user_in.email.lower()).first()
     if not user or not verify_password(user_in.password, user.password_hash):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -952,129 +952,3 @@ def run_batch_research(request: List[str], db: Session = Depends(get_db)):
         "industry_breakdown": results
     }
 
-# ============================================================
-# ADMIN PANEL ENDPOINTS
-# ============================================================
-
-@app.get("/api/admin/stats")
-def admin_stats(db: Session = Depends(get_db), admin: User = Depends(get_current_admin_user)):
-    total_users = db.query(User).count()
-    total_companies = db.query(Company).count()
-    total_audits = db.query(Audit).count()
-    total_findings = db.query(Finding).count()
-    avg_score = db.query(func.avg(Audit.compliance_score)).scalar() or 0
-    critical_findings = db.query(Finding).filter(Finding.severity == "Critical").count()
-    recent_audits = (
-        db.query(Audit).order_by(desc(Audit.created_at)).limit(5).all()
-    )
-    return {
-        "total_users": total_users,
-        "total_companies": total_companies,
-        "total_audits": total_audits,
-        "total_findings": total_findings,
-        "critical_findings": critical_findings,
-        "average_compliance_score": round(avg_score, 1),
-        "recent_audits": [
-            {
-                "id": a.id,
-                "company": a.policy.company.name if a.policy and a.policy.company else "Unknown",
-                "compliance_score": a.compliance_score,
-                "status": a.status,
-                "created_at": a.created_at,
-            }
-            for a in recent_audits
-        ],
-    }
-
-
-@app.get("/api/admin/users")
-def admin_list_users(db: Session = Depends(get_db), admin: User = Depends(get_current_admin_user)):
-    users = db.query(User).order_by(desc(User.created_at)).all()
-    return [
-        {
-            "id": u.id,
-            "email": u.email,
-            "role": u.role,
-            "created_at": u.created_at,
-            "audit_count": db.query(Audit).filter(Audit.created_by == u.id).count(),
-        }
-        for u in users
-    ]
-
-
-@app.patch("/api/admin/users/{user_id}/role")
-def admin_update_role(user_id: int, role: str = Query(...), db: Session = Depends(get_db), admin: User = Depends(get_current_admin_user)):
-    if role not in ["user", "compliance_officer", "admin"]:
-        raise HTTPException(status_code=400, detail="Invalid role")
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    user.role = role
-    db.commit()
-    return {"id": user.id, "email": user.email, "role": user.role}
-
-
-@app.delete("/api/admin/users/{user_id}")
-def admin_delete_user(user_id: int, db: Session = Depends(get_db), admin: User = Depends(get_current_admin_user)):
-    if user_id == admin.id:
-        raise HTTPException(status_code=400, detail="Cannot delete your own account")
-    user = db.query(User).filter(User.id == user_id).first()
-    if not user:
-        raise HTTPException(status_code=404, detail="User not found")
-    db.delete(user)
-    db.commit()
-    return {"deleted": True, "id": user_id}
-
-
-@app.get("/api/admin/companies")
-def admin_list_companies(db: Session = Depends(get_db), admin: User = Depends(get_current_admin_user)):
-    companies = db.query(Company).order_by(desc(Company.created_at)).all()
-    return [
-        {
-            "id": c.id,
-            "name": c.name,
-            "domain": c.domain,
-            "industry": c.industry,
-            "size": c.size,
-            "created_at": c.created_at,
-            "policy_count": len(c.policies),
-        }
-        for c in companies
-    ]
-
-
-@app.get("/api/admin/audits")
-def admin_list_audits(db: Session = Depends(get_db), admin: User = Depends(get_current_admin_user)):
-    audits = db.query(Audit).order_by(desc(Audit.created_at)).all()
-    return [
-        {
-            "id": a.id,
-            "company": a.policy.company.name if a.policy and a.policy.company else "Unknown",
-            "industry": a.policy.company.industry if a.policy and a.policy.company else None,
-            "compliance_score": a.compliance_score,
-            "risk_score": a.risk_score,
-            "status": a.status,
-            "created_at": a.created_at,
-            "created_by": a.created_by,
-        }
-        for a in audits
-    ]
-
-
-@app.delete("/api/admin/audits/{audit_id}")
-def admin_delete_audit(audit_id: int, db: Session = Depends(get_db), admin: User = Depends(get_current_admin_user)):
-    audit = db.query(Audit).filter(Audit.id == audit_id).first()
-    if not audit:
-        raise HTTPException(status_code=404, detail="Audit not found")
-    db.delete(audit)
-    db.commit()
-    return {"deleted": True, "id": audit_id}
-
-
-@app.get("/api/admin/logs")
-def admin_list_logs(db: Session = Depends(get_db), admin: User = Depends(get_current_admin_user)):
-    logs = db.query(AuditLog).order_by(desc(AuditLog.timestamp)).limit(200).all()
-    return [
-        {"id": l.id, "action": l.action, "user_id": l.user_id, "ip_address": l.ip_address, "timestamp": l.timestamp}
-        for l in logs
-    ]

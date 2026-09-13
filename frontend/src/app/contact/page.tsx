@@ -41,7 +41,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="p-6 max-w-4xl mx-auto space-y-8 min-h-screen">
+    <div className="p-6 md:p-8 lg:p-12 w-full max-w-[1600px] mx-auto space-y-8 min-h-screen">
       <div>
         <h1 className="text-3xl font-extrabold text-brand-deep tracking-tight flex items-center gap-2">
           <span>Contact & Support Portal</span>

@@ -94,7 +94,7 @@ export default function HistoryPage() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8 min-h-screen">
+    <div className="w-full max-w-[1600px] mx-auto px-6 md:px-8 lg:px-12 py-8 space-y-8 min-h-screen">
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-brand-green/20 pb-6">
         <div>
