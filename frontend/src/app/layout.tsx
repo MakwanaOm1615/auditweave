@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import Script from "next/script";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { ChevronLeft, ChevronRight, Shield, User, Layers, History, LogOut, LayoutDashboard, Zap } from "lucide-react";
@@ -103,6 +104,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/axoreon-logo-square.png" />
       </head>
       <body className="min-h-screen bg-brand-cream text-brand-deep antialiased">
+        <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
         {shouldShowSidebar && (
           <>
             {isSidebarOpen && (

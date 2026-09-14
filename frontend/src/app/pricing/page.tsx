@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Shield, Zap, Sparkles, Loader2, IndianRupee } from "lucide-react";
-import { isAuthenticated } from "@/lib/api";
+import { isAuthenticated, createPaymentOrder, verifyPaymentSignature } from "@/lib/api";
 
 const pricingTiers = [
   {
@@ -51,43 +51,57 @@ export default function PricingPage() {
     setError("");
 
     try {
-      // 1. Create order (placeholder)
-      const token = localStorage.getItem("auth_token");
-      const orderRes = await fetch("http://localhost:8000/api/payments/create-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+      // 1. Create order
+      const orderData = await createPaymentOrder(tier.credits);
+
+      // Open Razorpay modal
+      const options = {
+        key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID,
+        amount: orderData.amount,
+        currency: orderData.currency,
+        name: "AuditWeave",
+        description: `${tier.credits} credits`,
+        order_id: orderData.id,
+        handler: async function (response: any) {
+          try {
+            await verifyPaymentSignature(
+              response.razorpay_order_id,
+              response.razorpay_payment_id,
+              response.razorpay_signature
+            );
+
+            // Update global session (trigger event)
+            window.dispatchEvent(new Event("auth_session_change"));
+            
+            setSuccessId(tier.id);
+            setTimeout(() => {
+              router.push("/history");
+            }, 2000);
+          } catch (err: any) {
+            setError(err.message || "Payment verification failed.");
+            setLoadingId(null);
+          }
         },
-        body: JSON.stringify({ credits: tier.credits })
-      });
-
-      if (!orderRes.ok) throw new Error("Failed to create order");
-      const orderData = await orderRes.json();
-
-      // 2. Verify payment (placeholder - simulates successful razorpay modal)
-      const verifyRes = await fetch("http://localhost:8000/api/payments/verify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${token}`
+        prefill: {
+          name: "User",
+          email: "user@example.com",
         },
-        body: JSON.stringify({
-          razorpay_order_id: orderData.id,
-          razorpay_payment_id: "pay_test_" + Math.random().toString(36).substring(7),
-          razorpay_signature: "test_sig"
-        })
-      });
+        theme: {
+          color: "#276152"
+        },
+        modal: {
+          ondismiss: function() {
+            setLoadingId(null);
+          }
+        }
+      };
 
-      if (!verifyRes.ok) throw new Error("Payment verification failed");
-      
-      // Update global session (trigger event)
-      window.dispatchEvent(new Event("auth_session_change"));
-      
-      setSuccessId(tier.id);
-      setTimeout(() => {
-        router.push("/history");
-      }, 2000);
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response: any){
+        setError(`Payment failed: ${response.error.description}`);
+        setLoadingId(null);
+      });
+      rzp.open();
 
     } catch (err: any) {
       setError(err.message || "Something went wrong during checkout.");
@@ -97,8 +111,9 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="p-6 md:p-8 lg:p-12 w-full max-w-[1400px] mx-auto min-h-screen">
-      <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
+    <>
+      <div className="p-6 md:p-8 lg:p-12 w-full max-w-[1400px] mx-auto min-h-screen">
+        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
         <h1 className="text-4xl md:text-5xl font-extrabold text-brand-deep tracking-tight">
           Simple, Transparent <span className="text-brand-green">Pricing</span>
         </h1>
@@ -191,5 +206,6 @@ export default function PricingPage() {
         </p>
       </div>
     </div>
+    </>
   );
 }

@@ -300,6 +300,30 @@ export async function getLeaderboard(): Promise<any[]> {
   return request<any[]>("/leaderboard");
 }
 
+// --- PAYMENTS ---
+
+export async function createPaymentOrder(credits: number): Promise<any> {
+  return request<any>("/payments/create-order", {
+    method: "POST",
+    body: JSON.stringify({ credits }),
+  });
+}
+
+export async function verifyPaymentSignature(
+  razorpay_order_id: string, 
+  razorpay_payment_id: string, 
+  razorpay_signature: string
+): Promise<any> {
+  return request<any>("/payments/verify", {
+    method: "POST",
+    body: JSON.stringify({
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+    }),
+  });
+}
+
 export async function createBatchAudit(items: Array<{ company_name: string; industry: string; policy_url?: string; policy_text?: string }>): Promise<any> {
   return request<any>("/audit/batch", {
     method: "POST",

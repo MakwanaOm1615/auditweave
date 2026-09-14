@@ -66,3 +66,5 @@ uvicorn==0.52.4
 
 resend==2.1.0
 razorpay==1.4.1
+
+setuptools<81
