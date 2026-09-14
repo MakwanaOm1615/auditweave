@@ -59,9 +59,12 @@ export default function AuditDetailsPage() {
   const [remediatedDropdownOpen, setRemediatedDropdownOpen] = useState(false);
   const [remediatedDownloading, setRemediatedDownloading] = useState(false);
 
-  const [editorOpen, setEditorOpen] = useState(false);
-  const [editorText, setEditorText] = useState("");
-  const [editorLoading, setEditorLoading] = useState(false);
+  const [fillModalOpen, setFillModalOpen] = useState(false);
+  const [placeholders, setPlaceholders] = useState<string[]>([]);
+  const [placeholderValues, setPlaceholderValues] = useState<Record<string, string>>({});
+  const [pendingDownloadFormat, setPendingDownloadFormat] = useState<"pdf" | "docx" | null>(null);
+  const [rawRemediatedText, setRawRemediatedText] = useState("");
+  const [fillModalLoading, setFillModalLoading] = useState(false);
 
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [copilotMsg, setCopilotMsg] = useState("");
@@ -375,9 +378,21 @@ export default function AuditDetailsPage() {
                         setRemediatedDropdownOpen(false);
                         setRemediatedDownloading(true);
                         try {
-                          await downloadRemediatedPolicy(auditId, fmt);
+                          const text = await getRemediatedPolicyText(auditId);
+                          const matches = Array.from(text.matchAll(/\[([A-Z_]+)\]/g)).map((m: any) => m[1]);
+                          const uniquePlaceholders = Array.from(new Set(matches)) as string[];
+                          
+                          if (uniquePlaceholders.length > 0) {
+                            setRawRemediatedText(text);
+                            setPlaceholders(uniquePlaceholders);
+                            setPlaceholderValues({});
+                            setPendingDownloadFormat(fmt);
+                            setFillModalOpen(true);
+                          } else {
+                            await downloadFilledPolicy(auditId, text, fmt);
+                          }
                         } catch (err) {
-                          console.error("Remediated policy download failed:", err);
+                          console.error("Remediated policy processing failed:", err);
                         } finally {
                           setRemediatedDownloading(false);
                         }
@@ -387,28 +402,6 @@ export default function AuditDetailsPage() {
                       <span>Download as .{fmt.toUpperCase()}</span>
                     </button>
                   ))}
-                  <div className="my-1 border-t border-brand-deep/10" />
-                  <button
-                    type="button"
-                    className="flex w-full items-center gap-2 px-4 py-2.5 text-xs font-semibold text-brand-deep/80 transition hover:bg-brand-green/5 hover:text-brand-green"
-                    onClick={async () => {
-                      setRemediatedDropdownOpen(false);
-                      setEditorLoading(true);
-                      setEditorOpen(true);
-                      try {
-                        const text = await getRemediatedPolicyText(auditId);
-                        setEditorText(text);
-                      } catch (err) {
-                        console.error("Failed to load policy text:", err);
-                        setEditorText("Error loading policy text. Please try again.");
-                      } finally {
-                        setEditorLoading(false);
-                      }
-                    }}
-                  >
-                    <BookOpen className="h-3.5 w-3.5" />
-                    <span>Edit Policy Text</span>
-                  </button>
                 </div>
               </>
             )}
@@ -692,69 +685,82 @@ export default function AuditDetailsPage() {
         </div>
       )}
 
-      {/* --- POLICY EDITOR MODAL --- */}
-      {editorOpen && (
+      {/* --- PLACEHOLDER FILL MODAL --- */}
+      {fillModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-deep/45 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-4xl space-y-6 rounded-2xl border border-brand-deep/10 bg-white p-6 shadow-2xl flex flex-col h-[85vh]">
+          <div className="w-full max-w-xl space-y-6 rounded-2xl border border-brand-deep/10 bg-white p-6 shadow-2xl flex flex-col max-h-[85vh]">
             <div className="flex items-center justify-between border-b border-brand-deep/[0.08] pb-3 shrink-0">
               <div>
-                <h3 className="text-lg font-bold text-brand-deep">Edit Remediated Policy</h3>
-                <p className="mt-0.5 text-[11px] text-brand-deep/50">Modify AI-generated placeholders before exporting the final document.</p>
+                <h3 className="text-lg font-bold text-brand-deep">Missing Details Required</h3>
+                <p className="mt-0.5 text-[11px] text-brand-deep/50">Please fill in the following placeholders for your remediated policy.</p>
               </div>
               <button
-                onClick={() => setEditorOpen(false)}
+                onClick={() => setFillModalOpen(false)}
                 className="text-xs font-semibold text-brand-deep/50 hover:text-brand-deep"
               >
                 Close
               </button>
             </div>
 
-            <div className="flex-1 overflow-hidden flex flex-col">
-              {editorLoading ? (
-                <div className="flex flex-col items-center justify-center space-y-3 h-full font-mono text-xs text-brand-deep/55">
-                  <Loader2 className="h-6 w-6 animate-spin text-brand-green" />
-                  <span>Loading full policy document...</span>
+            <div className="flex-1 overflow-y-auto pr-2 space-y-4">
+              {placeholders.map((p) => (
+                <div key={p} className="flex flex-col">
+                  <label className="mb-1 text-xs font-bold text-brand-deep uppercase tracking-wide">
+                    {p.replace(/_/g, " ")}
+                  </label>
+                  <input
+                    type="text"
+                    value={placeholderValues[p] || ""}
+                    onChange={(e) => setPlaceholderValues(prev => ({ ...prev, [p]: e.target.value }))}
+                    placeholder={`Enter ${p.replace(/_/g, " ").toLowerCase()}`}
+                    className="w-full rounded-xl border border-brand-deep/20 bg-brand-cream/30 px-3 py-2 text-sm text-brand-deep focus:border-brand-green focus:outline-none focus:ring-1 focus:ring-brand-green"
+                  />
                 </div>
-              ) : (
-                <textarea
-                  value={editorText}
-                  onChange={(e) => setEditorText(e.target.value)}
-                  className="flex-1 w-full p-4 rounded-xl border border-brand-deep/20 bg-brand-cream/30 text-xs font-mono leading-relaxed text-brand-deep focus:outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green resize-none"
-                  placeholder="Policy content will appear here..."
-                />
-              )}
+              ))}
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-brand-deep/[0.08] shrink-0">
+            <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-3 border-t border-brand-deep/[0.08] shrink-0">
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-xl border border-brand-green/20 bg-brand-green/5 px-4 py-2.5 text-xs font-bold text-brand-green transition hover:bg-brand-green/10"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl border border-brand-deep/10 bg-white px-4 py-2.5 text-xs font-bold text-brand-deep/70 transition hover:bg-brand-deep/5"
                 onClick={async () => {
+                  setFillModalLoading(true);
                   try {
-                    await downloadFilledPolicy(auditId, editorText, "docx");
+                    await downloadFilledPolicy(auditId, rawRemediatedText, pendingDownloadFormat || "pdf");
+                    setFillModalOpen(false);
                   } catch (err) {
-                    console.error("Failed to export docx:", err);
+                    console.error("Failed to download as-is:", err);
+                  } finally {
+                    setFillModalLoading(false);
                   }
                 }}
-                disabled={editorLoading || !editorText}
+                disabled={fillModalLoading}
               >
-                <FileDown className="h-3.5 w-3.5" />
-                <span>Export DOCX</span>
+                <span>Download as-is</span>
               </button>
               <button
                 type="button"
-                className="flex items-center gap-2 rounded-xl bg-brand-green px-4 py-2.5 text-xs font-bold text-white transition hover:bg-brand-deep"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-xl bg-brand-green px-4 py-2.5 text-xs font-bold text-white transition hover:bg-[#1C5E47]"
                 onClick={async () => {
+                  setFillModalLoading(true);
                   try {
-                    await downloadFilledPolicy(auditId, editorText, "pdf");
+                    let finalText = rawRemediatedText;
+                    for (const p of placeholders) {
+                      const val = placeholderValues[p] || `[${p}]`;
+                      finalText = finalText.replace(new RegExp(`\\[${p}\\]`, 'g'), val);
+                    }
+                    await downloadFilledPolicy(auditId, finalText, pendingDownloadFormat || "pdf");
+                    setFillModalOpen(false);
                   } catch (err) {
-                    console.error("Failed to export pdf:", err);
+                    console.error("Failed to download filled policy:", err);
+                  } finally {
+                    setFillModalLoading(false);
                   }
                 }}
-                disabled={editorLoading || !editorText}
+                disabled={fillModalLoading}
               >
-                <FileDown className="h-3.5 w-3.5" />
-                <span>Export PDF</span>
+                {fillModalLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
+                <span>Fill in details and download</span>
               </button>
             </div>
           </div>
