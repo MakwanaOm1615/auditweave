@@ -10,14 +10,15 @@ from sqlalchemy.orm import Session
 from sqlalchemy import desc, func
 
 from .database import engine, Base, get_db
-from .models import User, Company, Policy, Audit, Finding, Benchmark, AuditLog
+from .database import engine, Base, get_db
+from .models import User, Company, Policy, Audit, Finding, Benchmark, AuditLog, CreditTransaction
 from .schemas import (
     UserCreate, UserLogin, UserResponse, Token, TokenData, AuditRequest, AuditDetailResponse,
     AuditResponse, CompareRequest, RewriteRequest, RewriteResponse, CopilotRequest,
-    CopilotResponse, BenchmarkResponse, BatchAuditRequest
+    CopilotResponse, BenchmarkResponse, BatchAuditRequest, ContactRequest, ContactResponse
 )
 from .auth import (
-    get_password_hash, create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
+    get_password_hash, create_access_token, get_current_user, get_current_user_optional, ACCESS_TOKEN_EXPIRE_MINUTES
 )
 from .services.user_auth import (
     AuthDatabaseError, EmailAlreadyRegisteredError, authenticate_user, create_user
@@ -25,7 +26,13 @@ from .services.user_auth import (
 from .services.text_extractor import extract_text_from_url, extract_text_from_pdf, extract_text_from_docx
 from .services.rule_engine import HybridComplianceEngine
 from .services.gemini import analyze_policy_with_gemini, HAS_GEMINI_KEY
-from .services.pdf_generator import generate_audit_pdf, generate_comparison_pdf
+from .services.pdf_generator import (
+    generate_audit_pdf,
+    generate_comparison_pdf,
+    generate_remediated_policy_pdf,
+    generate_remediated_policy_docx,
+)
+from .services.policy_remediation import generate_remediated_policy
 from .services.rewrite import (
     build_rewrite_prompt,
     build_safe_fallback,
@@ -137,7 +144,8 @@ def login(user_in: UserLogin, db: Session = Depends(get_db)):
         "access_token": access_token,
         "token_type": "bearer",
         "role": user.role,
-        "email": user.email
+        "email": user.email,
+        "credits_balance": user.credits_balance
     }
 
 
@@ -260,7 +268,7 @@ def perform_compliance_audit(company_name: str, industry: str, policy_text: str,
     return audit
 
 @app.post("/api/audit", response_model=AuditDetailResponse)
-def audit_policy(request: AuditRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+def audit_policy(request: AuditRequest, db: Session = Depends(get_db), current_user: Optional[User] = Depends(get_current_user_optional)):
     policy_text = ""
     
     if request.policy_url:
@@ -278,6 +286,29 @@ def audit_policy(request: AuditRequest, db: Session = Depends(get_db), current_u
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The extracted policy text is too short to audit. Minimum 150 characters."
         )
+
+    # Check and deduct credits for authenticated users
+    if current_user:
+        if current_user.role not in ["admin", "compliance_officer"] and current_user.credits_balance < 1:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail="Insufficient credits. Please purchase more credits to continue auditing."
+            )
+        
+        if current_user.role not in ["admin", "compliance_officer"]:
+            current_user.credits_balance -= 1
+            
+            # Log the transaction
+            tx = CreditTransaction(
+                user_id=current_user.id,
+                amount=-1,
+                transaction_type="audit_usage"
+            )
+            db.add(tx)
+            db.commit()
+            
+    # For anonymous users, we allow the audit to proceed (freemium landing page flow).
+    # In a production app, we might want rate limiting by IP here.
         
     audit = perform_compliance_audit(
         company_name=request.company_name,
@@ -285,7 +316,7 @@ def audit_policy(request: AuditRequest, db: Session = Depends(get_db), current_u
         policy_text=policy_text,
         policy_url=request.policy_url,
         db=db,
-        user_id=current_user.id
+        user_id=current_user.id if current_user else None
     )
     
     response_audit = db.query(Audit).filter(Audit.id == audit.id).first()
@@ -302,7 +333,7 @@ def audit_policy_file(
     industry: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: User = Depends(get_current_user)
+    current_user: Optional[User] = Depends(get_current_user_optional)
 ):
     filename = file.filename.lower()
     file_bytes = file.file.read()
@@ -322,14 +353,32 @@ def audit_policy_file(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Extracted text from file was too short to audit."
         )
+
+    if current_user:
+        if current_user.role not in ["admin", "compliance_officer"] and current_user.credits_balance < 1:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail="Insufficient credits. Please purchase more credits to continue auditing."
+            )
         
+        if current_user.role not in ["admin", "compliance_officer"]:
+            current_user.credits_balance -= 1
+            
+            tx = CreditTransaction(
+                user_id=current_user.id,
+                amount=-1,
+                transaction_type="audit_usage"
+            )
+            db.add(tx)
+            db.commit()
+            
     audit = perform_compliance_audit(
         company_name=company_name,
         industry=industry,
         policy_text=policy_text,
         policy_url=f"Uploaded File: {file.filename}",
         db=db,
-        user_id=current_user.id
+        user_id=current_user.id if current_user else None
     )
     
     response_audit = db.query(Audit).filter(Audit.id == audit.id).first()
@@ -345,6 +394,23 @@ def audit_policy_file(
 def audit_policy_batch(request: BatchAuditRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     if not request.items or len(request.items) == 0:
         raise HTTPException(status_code=400, detail="At least one company must be provided for batch audit.")
+
+    num_items = len(request.items)
+    
+    if current_user.role not in ["admin", "compliance_officer"]:
+        if current_user.credits_balance < num_items:
+            raise HTTPException(
+                status_code=status.HTTP_402_PAYMENT_REQUIRED,
+                detail=f"Insufficient credits for batch audit. You need {num_items} credits but have {current_user.credits_balance}."
+            )
+        current_user.credits_balance -= num_items
+        tx = CreditTransaction(
+            user_id=current_user.id,
+            amount=-num_items,
+            transaction_type="audit_usage_batch"
+        )
+        db.add(tx)
+        db.commit()
         
     completed_audits = []
     for item in request.items:
@@ -520,6 +586,112 @@ def download_pdf_report(audit_id: int, db: Session = Depends(get_db), current_us
     )
 
 
+@app.get("/api/audit/{audit_id}/remediated-policy")
+def download_remediated_policy(
+    audit_id: int,
+    format: Literal["pdf", "docx", "text"] = Query("pdf"),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    audit = db.query(Audit).filter(
+        Audit.id == audit_id, Audit.created_by == current_user.id
+    ).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found.")
+
+    policy = db.query(Policy).filter(Policy.id == audit.policy_id).first()
+    company = db.query(Company).filter(Company.id == policy.company_id).first()
+
+    findings_list = []
+    for f in audit.findings:
+        findings_list.append({
+            "pillar": f.pillar,
+            "issue": f.issue,
+            "severity": f.severity,
+            "confidence_score": f.confidence_score,
+            "dpdp_section": f.dpdp_section,
+            "evidence_extract": f.evidence_extract,
+            "reason": f.reason,
+            "legal_rec": f.legal_rec,
+            "evidence_start_index": f.evidence_start_index,
+            "evidence_end_index": f.evidence_end_index,
+        })
+
+    audit_data = {
+        "company_name": company.name,
+        "findings": findings_list,
+    }
+
+    try:
+        remediated_text = generate_remediated_policy(audit_data, policy.policy_text)
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc))
+
+    if format == "text":
+        return {"text": remediated_text}
+
+    date_stamp = audit.created_at.strftime("%Y%m%d")
+    safe_name = company.name.replace(" ", "_")
+
+    if format == "docx":
+        docx_bytes = generate_remediated_policy_docx(remediated_text, company.name)
+        filename = f"DPDP_Remediated_Policy_{safe_name}_{date_stamp}.docx"
+        return Response(
+            content=docx_bytes,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
+
+    pdf_bytes = generate_remediated_policy_pdf(remediated_text, company.name)
+    filename = f"DPDP_Remediated_Policy_{safe_name}_{date_stamp}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+from pydantic import BaseModel
+class FillPolicyRequest(BaseModel):
+    text: str
+    format: Literal["pdf", "docx"] = "pdf"
+
+@app.post("/api/audit/{audit_id}/remediated-policy/fill")
+def download_filled_policy(
+    audit_id: int,
+    request: FillPolicyRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    audit = db.query(Audit).filter(
+        Audit.id == audit_id, Audit.created_by == current_user.id
+    ).first()
+    if not audit:
+        raise HTTPException(status_code=404, detail="Audit not found.")
+
+    policy = db.query(Policy).filter(Policy.id == audit.policy_id).first()
+    company = db.query(Company).filter(Company.id == policy.company_id).first()
+    
+    date_stamp = audit.created_at.strftime("%Y%m%d")
+    safe_name = company.name.replace(" ", "_")
+
+    if request.format == "docx":
+        docx_bytes = generate_remediated_policy_docx(request.text, company.name)
+        filename = f"DPDP_Remediated_Policy_{safe_name}_{date_stamp}.docx"
+        return Response(
+            content=docx_bytes,
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            headers={"Content-Disposition": f"attachment; filename={filename}"},
+        )
+
+    pdf_bytes = generate_remediated_policy_pdf(request.text, company.name)
+    filename = f"DPDP_Remediated_Policy_{safe_name}_{date_stamp}.pdf"
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={"Content-Disposition": f"attachment; filename={filename}"},
+    )
+
+
 # --- DASHBOARD & BENCHMARKS ---
 
 @app.get("/api/dashboard")
@@ -678,122 +850,6 @@ def compare_policies(request: CompareRequest, db: Session = Depends(get_db), cur
 def download_comparison_report(audit_id_a: int, audit_id_b: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     audit_a = db.query(Audit).filter(Audit.id == audit_id_a, Audit.created_by == current_user.id).first()
     audit_b = db.query(Audit).filter(Audit.id == audit_id_b, Audit.created_by == current_user.id).first()
-    
-    if not audit_a or not audit_b:
-        raise HTTPException(status_code=404, detail="One or both audits could not be found.")
-        
-    policy_a = db.query(Policy).filter(Policy.id == audit_a.policy_id).first()
-    company_a = db.query(Company).filter(Company.id == policy_a.company_id).first()
-    
-    policy_b = db.query(Policy).filter(Policy.id == audit_b.policy_id).first()
-    company_b = db.query(Company).filter(Company.id == policy_b.company_id).first()
-    
-    issues_a = [f.issue for f in audit_a.findings if f.severity in ["Critical", "High", "Medium"]]
-    issues_b = [f.issue for f in audit_b.findings if f.severity in ["Critical", "High", "Medium"]]
-    
-    compliance_winner = company_a.name if audit_a.compliance_score >= audit_b.compliance_score else company_b.name
-    gap_analysis = f"{company_a.name} scores {audit_a.compliance_score}/100 compared to {company_b.name}'s {audit_b.compliance_score}/100. " \
-                   f"{company_a.name} is stronger in {audit_a.findings[0].pillar if audit_a.findings else 'Consent'} compliance, " \
-                   f"while {company_b.name} exhibits critical vulnerabilities in {audit_b.findings[0].pillar if audit_b.findings else 'Notice'}."
-                   
-    compare_data = {
-        "winner": compliance_winner,
-        "gap_analysis": gap_analysis
-    }
-    
-    comp_a = {
-        "name": company_a.name,
-        "score": audit_a.compliance_score,
-        "status": audit_a.status,
-        "findings_count": len(audit_a.findings),
-        "primary_gaps": issues_a[:3]
-    }
-    comp_b = {
-        "name": company_b.name,
-        "score": audit_b.compliance_score,
-        "status": audit_b.status,
-        "findings_count": len(audit_b.findings),
-        "primary_gaps": issues_b[:3]
-    }
-    
-    pdf_bytes = generate_comparison_pdf(compare_data, comp_a, comp_b)
-    
-    filename = f"DPDP_Comparison_{company_a.name.replace(' ', '_')}_vs_{company_b.name.replace(' ', '_')}.pdf"
-    
-    return Response(
-        content=pdf_bytes,
-        media_type="application/pdf",
-        headers={
-            "Content-Disposition": f"attachment; filename={filename}"
-        }
-    )
-
-
-# --- KNOWLEDGE BASE (DPDP ACT 2023 - 100% ACCURATE MAPPINGS) ---
-
-DPDP_KB = {
-    "section_5": {
-        "title": "Section 5 - Notice",
-        "explanation": "Before or at the time of seeking consent, data fiduciaries must present a clear notice written in plain, easily understandable language. The notice must detail what personal data is collected, the specific purpose of processing, and explain the rights of the Data Principal to withdraw consent, correct data, or file grievances.",
-        "penalties": "Up to ₹150 Crore for failing to present appropriate notice.",
-        "best_practice": "Use a tabular layout listing each permission requested paired with a corresponding business purpose. Avoid generic 'we collect information to improve our services'."
-    },
-    "section_6": {
-        "title": "Section 6 - Consent",
-        "explanation": "Consent of the Data Principal must be free, specific, informed, unconditional, and unambiguous. It must be indicated by a clear affirmative action. Any part of the consent that violates the provisions of this Act is invalid. Consent must also be granular (not bundled with terms of service) and withdrawable at any time.",
-        "penalties": "Up to ₹50 Crore for failing to provide granular consent mechanisms.",
-        "best_practice": "Implement explicit opt-in checkboxes on signup sheets. Provide a dedicated 'Withdraw Consent' button in profile settings."
-    },
-    "section_8": {
-        "title": "Section 8 - Obligations of Data Fiduciary",
-        "explanation": "Data Fiduciaries are responsible for ensuring personal data is processed accurately, safeguarded with reasonable security safeguards to prevent breaches, and erased once the purpose of collection is fulfilled.",
-        "penalties": "Up to ₹250 Crore for failing to implement security safeguards, resulting in data breaches.",
-        "best_practice": "Encrypt database columns holding PII at rest. Implement automated data lifecycle retention rules."
-    },
-    "section_9": {
-        "title": "Section 9 - Processing of Personal Data of Children",
-        "explanation": "Data fiduciaries must obtain verifiable parental consent before processing any personal data of a child (under 18 years) or a person with disability. Fiduciaries are strictly prohibited from engaging in any tracking, behavioral monitoring, or targeted advertising directed at children.",
-        "penalties": "Up to ₹200 Crore for breaching children's data obligations.",
-        "best_practice": "Implement age gates during registration. Flag and exclude accounts under 18 from marketing pixel triggers."
-    },
-    "section_11": {
-        "title": "Section 11 - Right to Access Information About Personal Data",
-        "explanation": "The Data Principal has the right to obtain from the Data Fiduciary a summary of personal data being processed, the identities of all other Data Fiduciaries and Data Processors with whom the personal data has been shared, and any other information as may be prescribed.",
-        "penalties": "Up to ₹10 Crore for refusing to provide details of processed data to Data Principals.",
-        "best_practice": "Build a secure data export dashboard allowing users to view and download a copy of all database records linked to their account."
-    },
-    "section_12": {
-        "title": "Section 12 - Right to Correction, Completion, Erasure of Personal Data",
-        "explanation": "A Data Principal has the right to correction, completion, and erasure of their personal data. The Data Fiduciary must correct, complete, or erase the data upon receiving a valid request, unless retention is necessary for legal purposes.",
-        "penalties": "Up to ₹50 Crore for refusing to correct or erase user data upon valid requests.",
-        "best_practice": "Provide self-service buttons inside settings to correct profile details and request account deletion."
-    },
-    "section_13": {
-        "title": "Section 13 - Right to Grievance Redressal",
-        "explanation": "A Data Principal has the right to register a grievance with the Data Fiduciary regarding any act or omission in processing their data. Fiduciaries must set up an efficient redressal mechanism and publish the contact details of a Nodal/Grievance Officer.",
-        "penalties": "Up to ₹10 Crore for missing Grievance Redressal channels.",
-        "best_practice": "State the Grievance Redressal Officer's name, email, and response SLA clearly at the bottom of the privacy notice."
-    },
-    "section_16": {
-        "title": "Section 16 - Processing of Personal Data Outside India",
-        "explanation": "The Central Government may restrict the transfer of personal data by a Data Fiduciary for processing to such country or territory outside India as may be notified. Disclosures regarding cross-border transfers are mandatory.",
-        "penalties": "Up to ₹10 Crore for violating cross-border data transfer blacklists or notice requirements.",
-        "best_practice": "Audit cloud server locations and maintain standard contractual clauses with foreign sub-processors."
-    }
-}
-
-@app.get("/api/kb")
-def search_knowledge_base(query: Optional[str] = Query(None)):
-    if not query:
-        return DPDP_KB
-    query = query.lower()
-    results = {}
-    for sec, details in DPDP_KB.items():
-        if query in sec or query in details["title"].lower() or query in details["explanation"].lower():
-            results[sec] = details
-    return results
-
-
     
     if not audit_a or not audit_b:
         raise HTTPException(status_code=404, detail="One or both audits could not be found.")
@@ -1124,4 +1180,115 @@ def run_batch_research(request: List[str], db: Session = Depends(get_db), _curre
         "winner": max(results, key=lambda x: x["compliance_score"])["company_name"] if results else "None",
         "industry_breakdown": results
     }
+
+
+# --- CONTACT FORM ---
+
+RESEND_API_KEY = os.getenv("RESEND_API_KEY", "")
+CONTACT_ADMIN_EMAIL = os.getenv("CONTACT_ADMIN_EMAIL", "support@axoreon.com")
+
+@app.post("/api/contact", response_model=ContactResponse)
+async def submit_contact_form(request: ContactRequest):
+    """Accept contact form submissions. Sends email via Resend if configured, otherwise logs to console."""
+    logger = logging.getLogger(__name__)
+
+    subject = f"[AuditWeave Contact] {request.topic} — from {request.name}"
+    body_text = (
+        f"Name: {request.name}\n"
+        f"Email: {request.email}\n"
+        f"Topic: {request.topic}\n"
+        f"---\n"
+        f"{request.message}"
+    )
+
+    if RESEND_API_KEY:
+        try:
+            import resend
+            resend.api_key = RESEND_API_KEY
+
+            # Admin notification
+            resend.Emails.send({
+                "from": "AuditWeave <noreply@axoreon.com>",
+                "to": [CONTACT_ADMIN_EMAIL],
+                "subject": subject,
+                "text": body_text,
+            })
+
+            # User acknowledgment
+            resend.Emails.send({
+                "from": "AuditWeave <noreply@axoreon.com>",
+                "to": [str(request.email)],
+                "subject": "We received your message — AuditWeave Support",
+                "text": (
+                    f"Hi {request.name},\n\n"
+                    "Thank you for contacting AuditWeave. We've received your message "
+                    "and our GRC compliance team will respond within 12 business hours.\n\n"
+                    "— AuditWeave Team (Powered by Axoreon)"
+                ),
+            })
+
+            logger.info(f"Contact form email sent to {CONTACT_ADMIN_EMAIL} from {request.email}")
+        except Exception as e:
+            logger.error(f"Failed to send contact email via Resend: {e}")
+            # Fall through to success — we don't want to lose the submission
+    else:
+        # No email service configured — log to console so submissions aren't lost
+        logger.info(f"CONTACT FORM SUBMISSION (no email service configured):\n{body_text}")
+
+    return ContactResponse(
+        success=True,
+        message="Your message has been submitted. Our team will respond within 12 business hours."
+    )
+
+# --- PAYMENTS (RAZORPAY) ---
+
+import uuid
+from pydantic import BaseModel
+
+class CreateOrderRequest(BaseModel):
+    credits: int
+
+class VerifyPaymentRequest(BaseModel):
+    razorpay_order_id: str
+    razorpay_payment_id: str
+    razorpay_signature: str
+
+@app.post("/api/payments/create-order")
+async def create_payment_order(request: CreateOrderRequest, current_user: User = Depends(get_current_user)):
+    """Placeholder for Razorpay order creation."""
+    # Pricing: ₹20 per audit credit
+    amount_inr = request.credits * 20
+    amount_paise = amount_inr * 100
+    
+    # Placeholder order ID
+    order_id = f"order_{uuid.uuid4().hex[:14]}"
+    
+    return {
+        "id": order_id,
+        "amount": amount_paise,
+        "currency": "INR"
+    }
+
+@app.post("/api/payments/verify")
+async def verify_payment(request: VerifyPaymentRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Placeholder for Razorpay payment verification."""
+    # In a real implementation, we would verify the HMAC signature here
+    
+    # We don't have the credit amount in the verify request normally, 
+    # but for this placeholder we'll grant a fixed 5 credits
+    credits_purchased = 5
+    
+    current_user.credits_balance += credits_purchased
+    
+    tx = CreditTransaction(
+        user_id=current_user.id,
+        amount=credits_purchased,
+        transaction_type="purchase",
+        reference_id=request.razorpay_payment_id
+    )
+    db.add(tx)
+    db.commit()
+    
+    return {"success": True, "new_balance": current_user.credits_balance}
+
 

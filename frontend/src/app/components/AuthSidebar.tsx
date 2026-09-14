@@ -34,7 +34,7 @@ export function AuthSidebar() {
 
           {/* Center Graphic Badge */}
           <div className="relative z-10 flex h-[118px] w-[118px] flex-col items-center justify-center rounded-[24px] border border-brand-green/80 bg-brand-deep/90 shadow-2xl backdrop-blur-sm xl:h-[130px] xl:w-[130px]">
-            <Image src="/axoreon-logo.png" alt="" width={36} height={36} className="mb-2.5 object-contain brightness-0 invert opacity-90" />
+            <Image src="/axoreon-logo.png" alt="" width={36} height={36} className="mb-2.5 object-contain opacity-90" />
             <h2 className="text-[14.5px] font-bold tracking-tight text-brand-cream font-serif">AuditWeave</h2>
             <p className="text-[5.5px] font-extrabold text-[#3F9C7E] uppercase tracking-[0.25em] mt-1">POWERED BY AXOREON</p>
           </div>
@@ -45,7 +45,7 @@ export function AuthSidebar() {
       <div className="relative z-10 flex w-full max-w-[560px] flex-col justify-center">
         {/* Top Logo */}
         <div className="mb-8 flex items-center space-x-3 [@media(max-height:700px)]:mb-5">
-          <Image src="/axoreon-logo.png" alt="Axoreon" width={34} height={34} className="object-contain brightness-0 invert opacity-90" priority />
+          <Image src="/axoreon-logo.png" alt="Axoreon" width={34} height={34} className="object-contain opacity-90" priority />
           <div className="flex flex-col mt-1">
             <span className="font-serif font-black text-[24px] leading-[0.9] tracking-tight text-brand-cream">AuditWeave</span>
             <span className="text-[7.5px] font-extrabold text-[#3F9C7E] uppercase tracking-[0.22em] mt-1.5">POWERED BY AXOREON</span>

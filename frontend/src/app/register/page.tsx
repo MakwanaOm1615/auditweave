@@ -104,7 +104,7 @@ export default function RegisterPage() {
                     value={firstName}
                     onChange={(e) => setFirstName(e.target.value)}
                     className="h-[52px] w-full rounded-xl border border-brand-deep/10 bg-brand-cream/40 pl-11 pr-4 text-[14.5px] font-medium text-brand-deep outline-none transition-all placeholder:text-brand-deep/30 focus:border-brand-green focus:bg-white focus:ring-4 focus:ring-brand-green/10"
-                    placeholder="Krishna"
+                    placeholder="Your first name"
                   />
                 </div>
               </div>

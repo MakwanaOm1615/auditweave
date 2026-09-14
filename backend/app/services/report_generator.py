@@ -141,6 +141,10 @@ def generate_report_pdf(audit_data: dict) -> bytes:
         ('LINEBELOW', (0,0), (-1,-1), 0.5, colors.HexColor('#E2E8F0')),
     ]))
     story.append(t_meta)
+    story.append(Paragraph(
+        "Methodology: compliance score is the mean of 11 individually-scored DPDP pillar assessments (0\u2013100 each).",
+        ParagraphStyle('MethodNote', parent=c_styles['body'], fontSize=7.5, leading=10, textColor=colors.HexColor('#64748B'), spaceAfter=12)
+    ))
     
     story.append(Spacer(1, 20))
     story.append(Paragraph("1. Executive Summary", c_styles['h1']))

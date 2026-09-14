@@ -58,6 +58,10 @@ def score_and_validate_audit(company_name: str, industry: str, policy_name: str,
     # Calculate average confidence score
     avg_confidence = round(mean([f.get("confidence_score", 0.8) for f in findings]), 2)
     
+    # Sort findings by severity: Critical → High → Medium → Low → Informational
+    SEVERITY_ORDER = {"Critical": 0, "High": 1, "Medium": 2, "Low": 3, "Informational": 4}
+    findings.sort(key=lambda f: SEVERITY_ORDER.get(f.get("severity", "Low"), 3))
+    
     # Construct complete audit JSON
     import datetime
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")

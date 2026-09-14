@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Shield, Mail, MessageSquare, AlertCircle, CheckCircle2, ChevronDown } from "lucide-react";
+import { Shield, Mail, MessageSquare, AlertCircle, CheckCircle2, ChevronDown, Loader2 } from "lucide-react";
+import { submitContactForm } from "@/lib/api";
 
 const supportCategories = [
   { id: "feedback", label: "General Feedback & Suggestions" },
@@ -16,6 +17,8 @@ export default function ContactPage() {
   const [topic, setTopic] = useState("feedback");
   const [message, setMessage] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -29,15 +32,24 @@ export default function ContactPage() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!name || !email || !message) return;
     
-    // Simulate support submission
-    setSubmitted(true);
-    setName("");
-    setEmail("");
-    setMessage("");
+    setIsSubmitting(true);
+    setError("");
+
+    try {
+      await submitContactForm({ name, email, topic, message });
+      setSubmitted(true);
+      setName("");
+      setEmail("");
+      setMessage("");
+    } catch (err) {
+      setError("Failed to submit your message. Please try again later.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -76,11 +88,11 @@ export default function ContactPage() {
                   </svg>
                   <span>linkedin.com/company/axoreon</span>
                 </a>
-                <a href="https://www.instagram.com/axoreon" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-brand-deep transition">
+                <a href="https://www.instagram.com/axoreon.official" target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 hover:text-brand-deep transition">
                   <svg className="h-4 w-4 text-brand-green shrink-0" viewBox="0 0 24 24" fill="currentColor">
                     <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/>
                   </svg>
-                  <span>instagram.com/axoreon</span>
+                  <span>instagram.com/axoreon.official</span>
                 </a>
               </div>
             </div>
@@ -112,6 +124,12 @@ export default function ContactPage() {
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-4 text-xs">
+              {error && (
+                <div className="bg-red-50 border border-red-200 p-3 rounded-xl text-sm font-semibold text-red-600 flex items-center space-x-2">
+                  <AlertCircle className="h-4 w-4 shrink-0 text-red-500" />
+                  <span>{error}</span>
+                </div>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
                   <label className="text-[10px] text-brand-deep/60 font-bold uppercase tracking-wider">Your Name</label>
@@ -179,9 +197,17 @@ export default function ContactPage() {
 
               <button
                 type="submit"
-                className="w-full py-3 bg-brand-green hover:bg-brand-deep text-white font-bold text-sm rounded-xl transition shadow-sm cursor-pointer"
+                disabled={isSubmitting}
+                className="w-full py-3 bg-brand-green hover:bg-brand-deep text-white font-bold text-sm rounded-xl transition shadow-sm cursor-pointer disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center gap-2"
               >
-                File Support Ticket
+                {isSubmitting ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Submitting...
+                  </>
+                ) : (
+                  "File Support Ticket"
+                )}
               </button>
             </form>
           )}

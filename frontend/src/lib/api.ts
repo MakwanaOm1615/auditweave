@@ -215,6 +215,28 @@ export async function downloadAuditReport(auditId: string | number): Promise<voi
   saveBlob(await requestBlob(`/report/${auditId}`), `audit-report-${auditId}.pdf`);
 }
 
+export async function downloadRemediatedPolicy(auditId: string | number, format: "pdf" | "docx" = "pdf"): Promise<void> {
+  const ext = format === "docx" ? "docx" : "pdf";
+  saveBlob(
+    await requestBlob(`/audit/${auditId}/remediated-policy?format=${format}`),
+    `remediated-policy-${auditId}.${ext}`,
+  );
+}
+
+export async function getRemediatedPolicyText(auditId: string | number): Promise<string> {
+  const res = await request<any>(`/audit/${auditId}/remediated-policy?format=text`);
+  return res.text;
+}
+
+export async function downloadFilledPolicy(auditId: string | number, text: string, format: "pdf" | "docx" = "pdf"): Promise<void> {
+  const ext = format === "docx" ? "docx" : "pdf";
+  const blob = await requestBlob(`/audit/${auditId}/remediated-policy/fill`, {
+    method: "POST",
+    body: JSON.stringify({ text, format })
+  });
+  saveBlob(blob, `remediated-policy-edited-${auditId}.${ext}`);
+}
+
 export async function downloadComparisonReport(auditIdA: string | number, auditIdB: string | number): Promise<void> {
   saveBlob(
     await requestBlob(`/compare/${auditIdA}/${auditIdB}/report`),
@@ -293,5 +315,12 @@ export async function runResearchReport(companies: string[]): Promise<any> {
   return request<any>("/research", {
     method: "POST",
     body: JSON.stringify(companies)
+  });
+}
+
+export async function submitContactForm(data: { name: string; email: string; topic: string; message: string }): Promise<any> {
+  return request<any>("/contact", {
+    method: "POST",
+    body: JSON.stringify(data)
   });
 }

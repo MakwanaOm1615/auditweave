@@ -3,8 +3,8 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, FileDown, Search, ArrowLeft, Send, AlertTriangle, Copy, BookOpen, Loader2, ChevronDown } from "lucide-react";
-import { getAuditDetail, askCopilot, downloadAuditReport, getErrorMessage, rewriteClause } from "@/lib/api";
+import { Sparkles, FileDown, Search, ArrowLeft, Send, AlertTriangle, Copy, BookOpen, Loader2, ChevronDown, Info } from "lucide-react";
+import { getAuditDetail, askCopilot, downloadAuditReport, downloadRemediatedPolicy, getRemediatedPolicyText, downloadFilledPolicy, getErrorMessage, rewriteClause } from "@/lib/api";
 
 interface AuditFinding {
   id: number;
@@ -54,6 +54,13 @@ export default function AuditDetailsPage() {
   const [rewriteDisclaimer, setRewriteDisclaimer] = useState("");
   const [rewriteMode, setRewriteMode] = useState<"ai" | "template" | null>(null);
   const [rewriteError, setRewriteError] = useState("");
+
+  const [remediatedDropdownOpen, setRemediatedDropdownOpen] = useState(false);
+  const [remediatedDownloading, setRemediatedDownloading] = useState(false);
+
+  const [editorOpen, setEditorOpen] = useState(false);
+  const [editorText, setEditorText] = useState("");
+  const [editorLoading, setEditorLoading] = useState(false);
 
   const [copilotOpen, setCopilotOpen] = useState(false);
   const [copilotMsg, setCopilotMsg] = useState("");
@@ -302,8 +309,16 @@ export default function AuditDetailsPage() {
             <h1 className="flex items-center gap-2 text-2xl font-extrabold tracking-tight text-brand-deep">
               <span>{audit.company_name} GRC Assessment</span>
             </h1>
-            <p className="mt-0.5 text-xs text-brand-deep/55">
-              Score: <span className="font-bold text-brand-green">{audit.compliance_score}/100</span> <span className="mx-1 text-brand-deep/25">|</span> Status: <span className="font-semibold text-brand-deep/80">{audit.status}</span>
+            <p className="mt-0.5 flex items-center gap-1.5 text-xs text-brand-deep/55">
+              Score: <span className="font-bold text-brand-green">{audit.compliance_score}/100</span>
+              <span className="group relative inline-flex">
+                <Info className="h-3.5 w-3.5 cursor-help text-brand-deep/30 transition hover:text-brand-green" />
+                <span className="pointer-events-none absolute bottom-full left-1/2 z-40 mb-2 hidden w-72 -translate-x-1/2 rounded-xl border border-brand-deep/10 bg-white p-3 text-[11px] leading-relaxed text-brand-deep/70 shadow-lg group-hover:block">
+                  <span className="mb-1 block text-[10px] font-bold uppercase tracking-wider text-brand-green">Score Methodology</span>
+                  Calculated as the average of 11 individually-scored DPDP compliance pillars: Consent, Notice, Data Principal Rights, Children&apos;s Data, Fiduciary Obligations, Grievance Redressal, Cross-Border Transfer, Consent Withdrawal, Data Retention, Security Safeguards, and Breach Notification.
+                </span>
+              </span>
+              <span className="mx-1 text-brand-deep/25">|</span> Status: <span className="font-semibold text-brand-deep/80">{audit.status}</span>
             </p>
           </div>
         </div>
@@ -324,6 +339,79 @@ export default function AuditDetailsPage() {
             <FileDown className="h-4 w-4" />
             <span>Export PDF Report</span>
           </button>
+
+          {/* Remediated Policy Download */}
+          <div className="relative">
+            <button
+              type="button"
+              onClick={() => setRemediatedDropdownOpen((open) => !open)}
+              disabled={remediatedDownloading}
+              className="flex cursor-pointer items-center space-x-1.5 rounded-xl border border-brand-green/25 bg-white px-4 py-2.5 text-xs font-bold text-brand-green shadow-sm transition hover:bg-brand-green/5 disabled:opacity-60"
+            >
+              {remediatedDownloading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <FileDown className="h-4 w-4" />
+              )}
+              <span>Remediated Policy</span>
+              <ChevronDown className="h-3 w-3" />
+            </button>
+
+            {remediatedDropdownOpen && (
+              <>
+                <button
+                  type="button"
+                  className="fixed inset-0 z-20 cursor-default"
+                  onClick={() => setRemediatedDropdownOpen(false)}
+                />
+                <div className="absolute right-0 top-full z-30 mt-1.5 w-44 overflow-hidden rounded-xl border border-brand-deep/10 bg-white py-1 shadow-lg">
+                  {(["pdf", "docx"] as const).map((fmt) => (
+                    <button
+                      key={fmt}
+                      type="button"
+                      className="flex w-full items-center gap-2 px-4 py-2.5 text-xs font-semibold text-brand-deep/80 transition hover:bg-brand-green/5 hover:text-brand-green"
+                      onClick={async () => {
+                        setRemediatedDropdownOpen(false);
+                        setRemediatedDownloading(true);
+                        try {
+                          await downloadRemediatedPolicy(auditId, fmt);
+                        } catch (err) {
+                          console.error("Remediated policy download failed:", err);
+                        } finally {
+                          setRemediatedDownloading(false);
+                        }
+                      }}
+                    >
+                      <FileDown className="h-3.5 w-3.5" />
+                      <span>Download as .{fmt.toUpperCase()}</span>
+                    </button>
+                  ))}
+                  <div className="my-1 border-t border-brand-deep/10" />
+                  <button
+                    type="button"
+                    className="flex w-full items-center gap-2 px-4 py-2.5 text-xs font-semibold text-brand-deep/80 transition hover:bg-brand-green/5 hover:text-brand-green"
+                    onClick={async () => {
+                      setRemediatedDropdownOpen(false);
+                      setEditorLoading(true);
+                      setEditorOpen(true);
+                      try {
+                        const text = await getRemediatedPolicyText(auditId);
+                        setEditorText(text);
+                      } catch (err) {
+                        console.error("Failed to load policy text:", err);
+                        setEditorText("Error loading policy text. Please try again.");
+                      } finally {
+                        setEditorLoading(false);
+                      }
+                    }}
+                  >
+                    <BookOpen className="h-3.5 w-3.5" />
+                    <span>Edit Policy Text</span>
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
         </div>
       </div>
 
@@ -578,6 +666,75 @@ export default function AuditDetailsPage() {
                 )}
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* --- POLICY EDITOR MODAL --- */}
+      {editorOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-brand-deep/45 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-4xl space-y-6 rounded-2xl border border-brand-deep/10 bg-white p-6 shadow-2xl flex flex-col h-[85vh]">
+            <div className="flex items-center justify-between border-b border-brand-deep/[0.08] pb-3 shrink-0">
+              <div>
+                <h3 className="text-lg font-bold text-brand-deep">Edit Remediated Policy</h3>
+                <p className="mt-0.5 text-[11px] text-brand-deep/50">Modify AI-generated placeholders before exporting the final document.</p>
+              </div>
+              <button
+                onClick={() => setEditorOpen(false)}
+                className="text-xs font-semibold text-brand-deep/50 hover:text-brand-deep"
+              >
+                Close
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-hidden flex flex-col">
+              {editorLoading ? (
+                <div className="flex flex-col items-center justify-center space-y-3 h-full font-mono text-xs text-brand-deep/55">
+                  <Loader2 className="h-6 w-6 animate-spin text-brand-green" />
+                  <span>Loading full policy document...</span>
+                </div>
+              ) : (
+                <textarea
+                  value={editorText}
+                  onChange={(e) => setEditorText(e.target.value)}
+                  className="flex-1 w-full p-4 rounded-xl border border-brand-deep/20 bg-brand-cream/30 text-xs font-mono leading-relaxed text-brand-deep focus:outline-none focus:border-brand-green focus:ring-1 focus:ring-brand-green resize-none"
+                  placeholder="Policy content will appear here..."
+                />
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-brand-deep/[0.08] shrink-0">
+              <button
+                type="button"
+                className="flex items-center gap-2 rounded-xl border border-brand-green/20 bg-brand-green/5 px-4 py-2.5 text-xs font-bold text-brand-green transition hover:bg-brand-green/10"
+                onClick={async () => {
+                  try {
+                    await downloadFilledPolicy(auditId, editorText, "docx");
+                  } catch (err) {
+                    console.error("Failed to export docx:", err);
+                  }
+                }}
+                disabled={editorLoading || !editorText}
+              >
+                <FileDown className="h-3.5 w-3.5" />
+                <span>Export DOCX</span>
+              </button>
+              <button
+                type="button"
+                className="flex items-center gap-2 rounded-xl bg-brand-green px-4 py-2.5 text-xs font-bold text-white transition hover:bg-brand-deep"
+                onClick={async () => {
+                  try {
+                    await downloadFilledPolicy(auditId, editorText, "pdf");
+                  } catch (err) {
+                    console.error("Failed to export pdf:", err);
+                  }
+                }}
+                disabled={editorLoading || !editorText}
+              >
+                <FileDown className="h-3.5 w-3.5" />
+                <span>Export PDF</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

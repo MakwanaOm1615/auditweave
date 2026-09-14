@@ -4,7 +4,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { ChevronLeft, ChevronRight, Shield, User, Layers, History, LogOut, LayoutDashboard } from "lucide-react";
+import { ChevronLeft, ChevronRight, Shield, User, Layers, History, LogOut, LayoutDashboard, Zap } from "lucide-react";
 import { getCurrentEmail, getCurrentUser, isAuthenticated, logoutUser } from "@/lib/api";
 import { AUTH_SESSION_EVENT } from "@/lib/auth/session";
 import "./globals.css";
@@ -21,9 +21,10 @@ export default function RootLayout({
   const [firstName, setFirstName] = useState("");
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [credits, setCredits] = useState(0);
 
   useEffect(() => {
-    const publicPaths = ["/", "/login", "/register"];
+    const publicPaths = ["/", "/login", "/register", "/audit/new"];
     let disposed = false;
     let profileRequestVersion = 0;
     const syncSession = () => {
@@ -36,13 +37,18 @@ export default function RootLayout({
           .then((profile) => {
             if (!disposed && requestVersion === profileRequestVersion) {
               setFirstName(profile.first_name?.trim() || "");
+              setCredits(profile.credits_balance || 0);
             }
           })
           .catch(() => {
-            if (!disposed && requestVersion === profileRequestVersion) setFirstName("");
+            if (!disposed && requestVersion === profileRequestVersion) {
+              setFirstName("");
+              setCredits(0);
+            }
           });
       } else {
         setFirstName("");
+        setCredits(0);
       }
       if (!publicPaths.includes(pathname) && !authenticated) router.push("/login");
     };
@@ -78,6 +84,7 @@ export default function RootLayout({
     { href: "/audit/new", label: "Compliance Auditor", icon: Shield },
     { href: "/audit/batch", label: "Batch Multi-Audit", icon: Layers },
     { href: "/history", label: "Audit History", icon: History },
+    { href: "/pricing", label: "Credits & Pricing", icon: Zap },
     { href: "/contact", label: "Contact & Support", icon: User },
   ];
 
@@ -89,6 +96,12 @@ export default function RootLayout({
 
   return (
     <html lang="en">
+      <head>
+        <title>AuditWeave | Powered by Axoreon</title>
+        <meta name="description" content="AuditWeave — AI-powered DPDP Act 2023 compliance auditing platform by Axoreon. Automate privacy policy audits, consent management, and regulatory compliance." />
+        <link rel="icon" href="/axoreon-logo-square.png" type="image/png" />
+        <link rel="apple-touch-icon" href="/axoreon-logo-square.png" />
+      </head>
       <body className="min-h-screen bg-brand-cream text-brand-deep antialiased">
         {shouldShowSidebar && (
           <>
@@ -121,7 +134,7 @@ export default function RootLayout({
                     alt="AuditWeave"
                     width={38}
                     height={38}
-                    className="h-9 w-9 shrink-0 object-contain brightness-0 invert"
+                    className="h-9 w-9 shrink-0 object-contain"
                     priority
                   />
                   {isSidebarOpen && (
@@ -199,8 +212,22 @@ export default function RootLayout({
                   </p>
                 </div>
               ) : <div />}
-              {isAuth && userEmail && (
-                <div className="relative">
+              
+              <div className="flex items-center space-x-3 sm:space-x-4">
+                {isAuth && (
+                  <div className="hidden sm:flex items-center space-x-1.5 bg-brand-deep/[0.04] px-3 py-1.5 rounded-full border border-brand-deep/5">
+                    <div className={`h-2 w-2 rounded-full ${credits > 0 ? "bg-brand-green" : "bg-orange-500"}`} />
+                    <span className="text-xs font-extrabold text-brand-deep">{credits} <span className="font-semibold opacity-70">Credits</span></span>
+                    {credits === 0 && (
+                      <Link href="/pricing" className="ml-2 text-[9px] font-black text-brand-green hover:underline uppercase tracking-widest">
+                        Get More
+                      </Link>
+                    )}
+                  </div>
+                )}
+                
+                {isAuth && userEmail && (
+                  <div className="relative">
                   {isProfileOpen && (
                     <button
                       type="button"
@@ -251,6 +278,7 @@ export default function RootLayout({
                   )}
                 </div>
               )}
+              </div>
             </header>
           )}
           {children}

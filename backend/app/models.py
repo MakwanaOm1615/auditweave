@@ -11,7 +11,10 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
     role = Column(String, default="user") # user, admin, compliance_officer
+    credits_balance = Column(Integer, default=5) # New users get 5 free audits
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    credit_transactions = relationship("CreditTransaction", back_populates="user", cascade="all, delete-orphan")
 
 class Company(Base):
     __tablename__ = "companies"
@@ -99,3 +102,15 @@ class AuditLog(Base):
     user_id = Column(Integer, nullable=True)
     ip_address = Column(String, nullable=True)
     timestamp = Column(DateTime, default=datetime.datetime.utcnow)
+
+class CreditTransaction(Base):
+    __tablename__ = "credit_transactions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    amount = Column(Integer, nullable=False) # positive for purchase, negative for usage
+    transaction_type = Column(String, nullable=False) # "purchase", "audit_usage", "bonus"
+    reference_id = Column(String, nullable=True) # e.g. razorpay payment id or audit id
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    user = relationship("User", back_populates="credit_transactions")

@@ -38,6 +38,7 @@ class UserResponse(UserBase):
     id: int
     first_name: Optional[str] = None
     role: str
+    credits_balance: int = 0
     created_at: datetime
     
     class Config:
@@ -48,6 +49,7 @@ class Token(BaseModel):
     token_type: str
     role: str
     email: str
+    credits_balance: int = 0
 
 class TokenData(BaseModel):
     email: Optional[str] = None
@@ -196,3 +198,13 @@ class BatchAuditItem(BaseModel):
 
 class BatchAuditRequest(BaseModel):
     items: List[BatchAuditItem]
+
+class ContactRequest(BaseModel):
+    name: str = Field(min_length=1, max_length=100)
+    email: EmailStr
+    topic: str = "feedback"
+    message: str = Field(min_length=10, max_length=5000)
+
+class ContactResponse(BaseModel):
+    success: bool
+    message: str
