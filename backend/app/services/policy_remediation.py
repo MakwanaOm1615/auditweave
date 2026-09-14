@@ -169,6 +169,12 @@ def generate_remediated_policy(audit_data: dict, original_policy_text: str) -> s
     if not original_policy_text.strip():
         raise ValueError("Original policy text is empty; cannot generate remediated policy.")
 
+    import re
+    # Strip any previously auto-generated headers to prevent duplication on re-audits
+    original_policy_text = re.sub(r"^# Privacy Policy — .*?\n+", "", original_policy_text, flags=re.MULTILINE)
+    original_policy_text = re.sub(r"^\*This document was auto-remediated.*?\*\n+", "", original_policy_text, flags=re.MULTILINE)
+    original_policy_text = original_policy_text.strip()
+
     if not non_compliant:
         header = (
             f"# Privacy Policy — {company_name}\n\n"
@@ -178,7 +184,7 @@ def generate_remediated_policy(audit_data: dict, original_policy_text: str) -> s
 
     if HAS_GEMINI_KEY:
         try:
-            model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-1.5-flash"))
+            model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-3.6-flash"))
             prompt = _build_remediation_prompt(company_name, original_policy_text, non_compliant)
             response = model.generate_content(
                 prompt,

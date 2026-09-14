@@ -236,7 +236,7 @@ async def copilot_chat(request: CopilotRequest):
     
     if api_key:
         try:
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            model = genai.GenerativeModel("gemini-3.6-flash")
             audit_ctx = ""
             if audit_id in AUDIT_STORE:
                 audit_ctx = f"Audit Context: Company: {AUDIT_STORE[audit_id]['company_name']}, Score: {AUDIT_STORE[audit_id]['compliance_score']}/100\n"
@@ -268,7 +268,7 @@ async def rewrite_clause_route(request: RewriteRequest):
     
     if api_key:
         try:
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            model = genai.GenerativeModel("gemini-3.6-flash")
             prompt = (
                 f"You are a legal redrafting assistant under India's DPDP Act 2023.\n"
                 f"Rewrite the following non-compliant clause to be fully compliant with DPDP rules (e.g. granular consent, clear notice, or explicit rights):\n"

@@ -247,7 +247,7 @@ def analyze_policy_with_gemini(company_name: str, industry: str, policy_text: st
             policy_text=truncated_text
         )
         
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-3.6-flash')
         response = model.generate_content(
             prompt,
             generation_config={"response_mime_type": "application/json"}

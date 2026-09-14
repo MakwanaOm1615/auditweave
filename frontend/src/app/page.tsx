@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { Shield, Sparkles, ArrowRight, CheckCircle2, AlertTriangle, FileLock2, Award, BookOpen, KeyRound } from "lucide-react";
 
 export default function LandingPage() {
@@ -14,7 +15,7 @@ export default function LandingPage() {
       <nav className="h-20 max-w-7xl mx-auto w-full px-6 flex items-center justify-between border-b border-brand-deep/10 z-10 relative">
         <div className="flex items-center space-x-8">
           <Link href="/" className="flex items-center space-x-3">
-            <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-10 h-10 md:w-12 md:h-12 object-contain drop-shadow-md" />
+            <Image src="/axoreon-logo.png" alt="Axoreon Logo" width={40} height={40} className="w-10 h-10 md:w-11 md:h-11 object-contain drop-shadow-md" priority />
             <div className="flex flex-col justify-center">
               <span className="font-extrabold text-2xl tracking-tighter text-brand-deep leading-none font-serif">
                 AuditWeave
@@ -24,6 +25,14 @@ export default function LandingPage() {
               </span>
             </div>
           </Link>
+          <div className="hidden md:flex items-center space-x-6 pl-6 border-l border-brand-deep/10">
+            <Link href="/pricing" className="text-sm font-bold text-brand-deep/70 hover:text-brand-green uppercase tracking-wider transition">
+              Pricing
+            </Link>
+            <Link href="/contact" className="text-sm font-bold text-brand-deep/70 hover:text-brand-green uppercase tracking-wider transition">
+              Contact
+            </Link>
+          </div>
         </div>
         <div className="flex items-center space-x-4">
           <Link
@@ -40,6 +49,7 @@ export default function LandingPage() {
           </Link>
         </div>
       </nav>
+
 
       {/* Hero Section */}
       <main className="max-w-7xl mx-auto px-6 py-16 md:py-24 grid grid-cols-1 lg:grid-cols-12 gap-16 items-center flex-1 z-10 w-full relative">
@@ -198,7 +208,7 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-6 grid grid-cols-1 md:grid-cols-12 gap-8 mb-8 text-xs text-brand-deep/70">
           <div className="md:col-span-5 space-y-4">
             <div className="flex items-center space-x-3">
-              <img src="/axoreon-logo.png" alt="Axoreon Logo" className="w-8 h-8 md:w-10 md:h-10 object-contain drop-shadow-md" />
+              <Image src="/axoreon-logo.png" alt="Axoreon Logo" width={32} height={32} className="w-8 h-8 md:w-9 md:h-9 object-contain drop-shadow-md" />
               <div className="flex flex-col justify-center">
                 <span className="font-extrabold text-xl tracking-tighter text-brand-deep leading-none font-serif">
                   AuditWeave

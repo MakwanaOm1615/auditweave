@@ -97,8 +97,20 @@ def get_grc_styles():
         'meta': meta_style
     }
 
+def sanitize_data(data):
+    if isinstance(data, dict):
+        return {k: sanitize_data(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [sanitize_data(v) for v in data]
+    elif isinstance(data, str):
+        return data.replace("₹", "INR ")
+    return data
+
 def generate_audit_pdf(audit_data: dict, company_name: str, industry: str, audit_date: str) -> bytes:
     """Generates a styled, publication-ready PDF report of the compliance audit."""
+    audit_data = sanitize_data(audit_data)
+    company_name = sanitize_data(company_name)
+    industry = sanitize_data(industry)
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -216,12 +228,12 @@ def generate_audit_pdf(audit_data: dict, company_name: str, industry: str, audit
     
     for pil, status_lvl in pillar_scores.items():
         if status_lvl == "Compliant":
-            indicator = "🟢 PASS (100)"
+            indicator = "PASS (100)"
         elif status_lvl == "Partial":
-            indicator = "🟡 PARTIAL (50)"
+            indicator = "PARTIAL (50)"
         else:
-            indicator = "🔴 FAIL (20)"
-        heatmap_rows.append([pil, indicator, status_lvl.upper(), pillar_reqs.get(pil, "")])
+            indicator = "FAIL (20)"
+        heatmap_rows.append([pil, indicator, status_lvl.upper(), Paragraph(pillar_reqs.get(pil, ""), c_styles['body'])])
         
     t_heatmap = Table(heatmap_rows, colWidths=[1.8 * inch, 1.3 * inch, 1.2 * inch, 2.7 * inch])
     t_heatmap.setStyle(TableStyle([
@@ -240,7 +252,10 @@ def generate_audit_pdf(audit_data: dict, company_name: str, industry: str, audit
     story.append(Paragraph("3. Detailed Risk Findings & Evidence", c_styles['h1']))
     story.append(Paragraph("Traceable compliance violations, complete with the legal section breaches, extracted textual evidence, and recommendations.", c_styles['body']))
     
-    for i, f in enumerate(audit_data["findings"]):
+    severity_order = {"Critical": 1, "High": 2, "Medium": 3, "Low": 4, "Informational": 5}
+    sorted_findings = sorted(audit_data["findings"], key=lambda x: severity_order.get(x.get("severity", "Informational"), 99))
+    
+    for i, f in enumerate(sorted_findings):
         f_story = []
         sev_color = '#EF4444' if f["severity"] in ["Critical", "High"] else ('#F59E0B' if f["severity"] == "Medium" else '#3B82F6')
         
@@ -301,6 +316,9 @@ def generate_audit_pdf(audit_data: dict, company_name: str, industry: str, audit
 
 def generate_comparison_pdf(compare_data: dict, company_a: dict, company_b: dict) -> bytes:
     """Generates a styled comparison report PDF showing side-by-side GRC posture differences."""
+    compare_data = sanitize_data(compare_data)
+    company_a = sanitize_data(company_a)
+    company_b = sanitize_data(company_b)
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,
@@ -430,6 +448,8 @@ def _markdown_blocks_to_pdf_story(text: str, c_styles: dict) -> list:
 
 def generate_remediated_policy_pdf(remediated_text: str, company_name: str) -> bytes:
     """Generate a branded PDF of the remediated privacy policy."""
+    remediated_text = sanitize_data(remediated_text)
+    company_name = sanitize_data(company_name)
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(
         buffer,

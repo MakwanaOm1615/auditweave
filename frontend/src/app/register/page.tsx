@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowRight, Loader2, ArrowLeft, Mail, Lock, Eye, EyeOff, User } from "lucide-react";
+import { ArrowRight, Loader2, ArrowLeft, Mail, Lock, Eye, EyeOff, User, Shield } from "lucide-react";
 import { getErrorMessage, register } from "@/lib/api";
-import { normalizeEmail, PASSWORD_MIN_LENGTH, validateSignup } from "@/lib/auth/validation";
+import { normalizeEmail, PASSWORD_MIN_LENGTH, validateSignup, validateEmailField, validatePasswordField, getPasswordStrength } from "@/lib/auth/validation";
 import { AuthSidebar } from "../components/AuthSidebar";
 
 export default function RegisterPage() {
@@ -18,10 +18,20 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+  const [confirmPasswordTouched, setConfirmPasswordTouched] = useState(false);
+
+  const emailInlineError = emailTouched ? validateEmailField(email) : null;
+  const passwordInlineError = passwordTouched ? validatePasswordField(password) : null;
+  const confirmPasswordInlineError = confirmPasswordTouched && confirmPassword !== password ? "Passwords do not match." : null;
+  const isFormValid = !validateSignup(email, password, confirmPassword) && !!firstName.trim();
+  const passwordStrength = getPasswordStrength(password);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const validationError = validateSignup(password, confirmPassword);
+    const validationError = validateSignup(email, password, confirmPassword);
     if (validationError) {
       setError(validationError);
       return;
@@ -40,7 +50,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="relative flex min-h-[100dvh] w-full flex-col overflow-x-hidden bg-brand-cream lg:flex-row">
+    <div className="relative flex h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-hidden bg-brand-cream lg:flex-row">
       <Link href="/" className="absolute left-5 top-5 z-50 flex items-center space-x-2 text-sm font-bold text-brand-deep/50 transition-colors hover:text-brand-deep lg:hidden">
         <ArrowLeft className="h-4 w-4" />
         <span>Back to Home</span>
@@ -50,7 +60,7 @@ export default function RegisterPage() {
       <AuthSidebar />
 
       {/* Right Form Content */}
-      <section className="relative flex min-h-[100dvh] flex-1 items-center justify-center overflow-hidden bg-[#FDFBF7] px-5 py-20 sm:px-8 lg:w-1/2 lg:px-10 lg:py-16 [@media(max-height:800px)]:lg:py-8">
+      <section className="relative flex h-[100dvh] flex-1 items-center justify-center overflow-y-auto bg-[#FDFBF7] px-5 py-20 sm:px-8 lg:w-1/2 lg:px-10 lg:py-16 [@media(max-height:800px)]:lg:py-8">
         {/* Subtle Background Effects */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-green/5 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-deep/5 rounded-full blur-[80px] pointer-events-none" />
@@ -81,8 +91,9 @@ export default function RegisterPage() {
 
             <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
-                <div className="bg-red-50 border border-red-200 p-3.5 rounded-xl text-sm font-semibold text-red-600">
-                  {error}
+                <div className="bg-red-50 border border-red-200 p-3.5 rounded-xl text-sm font-semibold text-red-600 flex items-center gap-2">
+                  <Shield className="h-4 w-4 shrink-0 text-red-500" />
+                  <span>{error}</span>
                 </div>
               )}
 
@@ -123,11 +134,18 @@ export default function RegisterPage() {
                     autoComplete="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="w-full pl-11 pr-4 h-[52px] bg-brand-cream/40 border border-brand-deep/10 rounded-xl text-[14.5px] focus:bg-white focus:outline-none focus:border-brand-green focus:ring-4 focus:ring-brand-green/10 text-brand-deep transition-all placeholder:text-brand-deep/30 font-medium"
+                    onBlur={() => setEmailTouched(true)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setError("");
+                    }}
+                    className={`w-full pl-11 pr-4 h-[52px] ${emailInlineError ? 'bg-red-50/50 border-red-400' : 'bg-brand-cream/40 border-brand-deep/10'} rounded-xl text-[14.5px] focus:bg-white focus:outline-none focus:border-brand-green focus:ring-4 focus:ring-brand-green/10 text-brand-deep transition-all placeholder:text-brand-deep/30 font-medium`}
                     placeholder="you@company.com"
                   />
                 </div>
+                {emailInlineError && (
+                  <p className="text-red-500 text-xs font-semibold mt-1 flex items-center gap-1"><Shield className="h-3 w-3" /> {emailInlineError}</p>
+                )}
               </div>
 
               <div className="space-y-1.5 relative">
@@ -145,8 +163,12 @@ export default function RegisterPage() {
                       required
                       minLength={PASSWORD_MIN_LENGTH}
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="w-full pl-11 pr-4 h-[52px] bg-brand-cream/40 border border-brand-deep/10 rounded-xl text-[14.5px] focus:bg-white focus:outline-none focus:border-brand-green focus:ring-4 focus:ring-brand-green/10 text-brand-deep transition-all placeholder:text-brand-deep/30 font-medium"
+                      onBlur={() => setPasswordTouched(true)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setError("");
+                      }}
+                      className={`w-full pl-11 pr-4 h-[52px] ${passwordInlineError ? 'bg-red-50/50 border-red-400' : 'bg-brand-cream/40 border-brand-deep/10'} rounded-xl text-[14.5px] focus:bg-white focus:outline-none focus:border-brand-green focus:ring-4 focus:ring-brand-green/10 text-brand-deep transition-all placeholder:text-brand-deep/30 font-medium`}
                       placeholder="••••••••"
                     />
                     <button
@@ -158,7 +180,19 @@ export default function RegisterPage() {
                       {passwordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                  <p className="text-[11px] text-brand-deep/50">Use at least {PASSWORD_MIN_LENGTH} characters.</p>
+                  
+                  {passwordInlineError ? (
+                    <p className="text-red-500 text-xs font-semibold mt-1 flex items-center gap-1"><Shield className="h-3 w-3" /> {passwordInlineError}</p>
+                  ) : (
+                    <div className="mt-1">
+                      <div className="flex gap-1">
+                        <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength === 'none' ? 'bg-brand-deep/10' : passwordStrength === 'weak' ? 'bg-red-400' : passwordStrength === 'medium' ? 'bg-amber-400' : 'bg-brand-green'}`} />
+                        <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength === 'none' || passwordStrength === 'weak' ? 'bg-brand-deep/10' : passwordStrength === 'medium' ? 'bg-amber-400' : 'bg-brand-green'}`} />
+                        <div className={`h-1 flex-1 rounded-full transition-colors ${passwordStrength === 'strong' ? 'bg-brand-green' : 'bg-brand-deep/10'}`} />
+                      </div>
+                      <p className="text-[10px] font-semibold text-brand-deep/50 mt-1 uppercase tracking-widest">{passwordStrength !== 'none' ? passwordStrength : 'Password strength'}</p>
+                    </div>
+                  )}
                 </div>
 
               <div className="space-y-1.5 relative">
@@ -174,17 +208,21 @@ export default function RegisterPage() {
                     required
                     minLength={PASSWORD_MIN_LENGTH}
                     value={confirmPassword}
+                    onBlur={() => setConfirmPasswordTouched(true)}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-11 pr-4 h-[52px] bg-brand-cream/40 border border-brand-deep/10 rounded-xl text-[14.5px] focus:bg-white focus:outline-none focus:border-brand-green focus:ring-4 focus:ring-brand-green/10 text-brand-deep transition-all placeholder:text-brand-deep/30 font-medium"
+                    className={`w-full pl-11 pr-4 h-[52px] ${confirmPasswordInlineError ? 'bg-red-50/50 border-red-400' : 'bg-brand-cream/40 border-brand-deep/10'} rounded-xl text-[14.5px] focus:bg-white focus:outline-none focus:border-brand-green focus:ring-4 focus:ring-brand-green/10 text-brand-deep transition-all placeholder:text-brand-deep/30 font-medium`}
                     placeholder="••••••••"
                   />
                 </div>
+                {confirmPasswordInlineError && (
+                  <p className="text-red-500 text-xs font-semibold mt-1 flex items-center gap-1"><Shield className="h-3 w-3" /> {confirmPasswordInlineError}</p>
+                )}
               </div>
 
               <button
                 type="submit"
-                disabled={loading}
-                className="w-full h-[54px] mt-4 bg-brand-green hover:bg-[#1C5E47] hover:-translate-y-[1px] hover:shadow-lg hover:shadow-brand-green/20 rounded-xl text-[15px] font-bold text-white transition-all duration-300 flex items-center justify-center space-x-2.5 disabled:opacity-50 disabled:hover:translate-y-0"
+                disabled={loading || !isFormValid}
+                className="w-full h-[54px] mt-4 bg-brand-green hover:bg-[#1C5E47] hover:-translate-y-[1px] hover:shadow-lg hover:shadow-brand-green/20 rounded-xl text-[15px] font-bold text-white transition-all duration-300 flex items-center justify-center space-x-2.5 disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none"
               >
                 {loading ? (
                   <>

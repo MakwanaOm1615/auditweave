@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { FileQuestion, ArrowLeft, Home } from "lucide-react";
 
@@ -13,7 +14,7 @@ export default function NotFound() {
         
         {/* Logo Header */}
         <div className="flex flex-col items-center mb-8">
-          <img src="/axoreon-logo.png" alt="Axoreon Logo" className="h-10 w-10 object-contain drop-shadow-sm mb-2" />
+          <Image src="/axoreon-logo.png" alt="Axoreon Logo" width={40} height={40} className="h-10 w-10 object-contain drop-shadow-sm mb-2" priority />
           <span className="text-[9px] font-bold text-brand-green uppercase tracking-[0.2em]">
             Powered by Axoreon
           </span>

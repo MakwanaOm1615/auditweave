@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Shield, ArrowRight, Loader2, ArrowLeft, Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { getErrorMessage, login } from "@/lib/api";
-import { normalizeEmail, validateLogin } from "@/lib/auth/validation";
+import { normalizeEmail, validateLogin, validateEmailField } from "@/lib/auth/validation";
 import { AuthSidebar } from "../components/AuthSidebar";
 
 export default function LoginPage() {
@@ -15,6 +15,13 @@ export default function LoginPage() {
   const [passwordVisible, setPasswordVisible] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  const [emailTouched, setEmailTouched] = useState(false);
+  const [passwordTouched, setPasswordTouched] = useState(false);
+
+  const emailInlineError = emailTouched ? validateEmailField(email) : null;
+  const passwordInlineError = passwordTouched ? (!password ? "Password is required." : null) : null;
+  const isFormValid = !validateLogin(email, password);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +45,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="relative flex min-h-[100dvh] w-full flex-col overflow-x-hidden bg-brand-cream lg:flex-row">
+    <div className="relative flex h-[100dvh] w-full flex-col overflow-x-hidden overflow-y-hidden bg-brand-cream lg:flex-row">
       <Link href="/" className="absolute left-5 top-5 z-50 flex items-center space-x-2 text-sm font-bold text-brand-deep/50 transition-colors hover:text-brand-deep lg:hidden">
         <ArrowLeft className="h-4 w-4" />
         <span>Back to Home</span>
@@ -48,7 +55,7 @@ export default function LoginPage() {
       <AuthSidebar />
 
       {/* Right Form Content */}
-      <section className="relative flex min-h-[100dvh] flex-1 items-center justify-center overflow-hidden bg-[#FDFBF7] px-5 py-20 sm:px-8 lg:w-1/2 lg:px-10 lg:py-16 [@media(max-height:700px)]:lg:py-8">
+      <section className="relative flex h-[100dvh] flex-1 items-center justify-center overflow-y-auto bg-[#FDFBF7] px-5 py-20 sm:px-8 lg:w-1/2 lg:px-10 lg:py-16 [@media(max-height:700px)]:lg:py-8">
         {/* Subtle Background Effects */}
         <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-brand-green/5 rounded-full blur-[100px] pointer-events-none" />
         <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-brand-deep/5 rounded-full blur-[80px] pointer-events-none" />
@@ -100,11 +107,18 @@ export default function LoginPage() {
                     autoComplete="email"
                     required
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    className="h-14 w-full rounded-xl border border-brand-deep/10 bg-brand-cream/40 pl-11 pr-4 text-[14.5px] font-medium text-brand-deep outline-none transition-all placeholder:text-brand-deep/30 hover:border-brand-deep/20 focus:border-brand-green focus:bg-white focus:ring-4 focus:ring-brand-green/10 [@media(max-height:700px)]:h-[52px]"
+                    onBlur={() => setEmailTouched(true)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      setError(""); // Clear top-level error on typing
+                    }}
+                    className={`h-14 w-full rounded-xl border ${emailInlineError ? 'border-red-400 bg-red-50/50' : 'border-brand-deep/10 bg-brand-cream/40'} pl-11 pr-4 text-[14.5px] font-medium text-brand-deep outline-none transition-all placeholder:text-brand-deep/30 hover:border-brand-deep/20 focus:border-brand-green focus:bg-white focus:ring-4 focus:ring-brand-green/10 [@media(max-height:700px)]:h-[52px]`}
                     placeholder="you@company.com"
                   />
                 </div>
+                {emailInlineError && (
+                  <p className="text-red-500 text-xs font-semibold mt-1 flex items-center gap-1"><Shield className="h-3 w-3" /> {emailInlineError}</p>
+                )}
               </div>
 
               <div className="space-y-1.5 relative">
@@ -122,8 +136,12 @@ export default function LoginPage() {
                       autoComplete="current-password"
                       required
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      className="h-14 w-full rounded-xl border border-brand-deep/10 bg-brand-cream/40 pl-11 pr-12 text-[14.5px] font-medium text-brand-deep outline-none transition-all placeholder:text-brand-deep/30 hover:border-brand-deep/20 focus:border-brand-green focus:bg-white focus:ring-4 focus:ring-brand-green/10 [@media(max-height:700px)]:h-[52px]"
+                      onBlur={() => setPasswordTouched(true)}
+                      onChange={(e) => {
+                        setPassword(e.target.value);
+                        setError("");
+                      }}
+                      className={`h-14 w-full rounded-xl border ${passwordInlineError ? 'border-red-400 bg-red-50/50' : 'border-brand-deep/10 bg-brand-cream/40'} pl-11 pr-12 text-[14.5px] font-medium text-brand-deep outline-none transition-all placeholder:text-brand-deep/30 hover:border-brand-deep/20 focus:border-brand-green focus:bg-white focus:ring-4 focus:ring-brand-green/10 [@media(max-height:700px)]:h-[52px]`}
                       placeholder="••••••••"
                     />
                     <button
@@ -135,12 +153,15 @@ export default function LoginPage() {
                       {passwordVisible ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  {passwordInlineError && (
+                    <p className="text-red-500 text-xs font-semibold mt-1 flex items-center gap-1"><Shield className="h-3 w-3" /> {passwordInlineError}</p>
+                  )}
                 </div>
 
               <button
                 type="submit"
-                disabled={loading}
-                className="mt-3 flex h-14 w-full items-center justify-center space-x-2.5 rounded-xl bg-brand-green text-[15px] font-bold text-white transition-all duration-300 hover:-translate-y-px hover:bg-[#1C5E47] hover:shadow-lg hover:shadow-brand-green/20 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 [@media(max-height:700px)]:h-[52px]"
+                disabled={loading || !isFormValid}
+                className="mt-3 flex h-14 w-full items-center justify-center space-x-2.5 rounded-xl bg-brand-green text-[15px] font-bold text-white transition-all duration-300 hover:-translate-y-px hover:bg-[#1C5E47] hover:shadow-lg hover:shadow-brand-green/20 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:translate-y-0 disabled:hover:shadow-none [@media(max-height:700px)]:h-[52px]"
               >
                 {loading ? (
                   <>

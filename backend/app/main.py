@@ -202,9 +202,9 @@ def perform_compliance_audit(company_name: str, industry: str, policy_text: str,
 
     # 4. Save results to Database
     # 4.1 Lookup/Create Company
-    company = db.query(Company).filter(Company.name == company_name).first()
+    domain = company_name.lower().replace(" ", "").replace("&", "") + ".com"
+    company = db.query(Company).filter((Company.name == company_name) | (Company.domain == domain)).first()
     if not company:
-        domain = company_name.lower().replace(" ", "").replace("&", "") + ".com"
         company = Company(name=company_name, domain=domain, industry=industry, size="SME")
         db.add(company)
         db.commit()
@@ -1050,10 +1050,9 @@ def audit_copilot(request: CopilotRequest, db: Session = Depends(get_db), curren
     
     if HAS_GEMINI_KEY:
         try:
-            model = genai.GenerativeModel('gemini-1.5-flash')
-            chat = model.start_chat(history=[])
-            chat.send_message(system_prompt)
-            response = chat.send_message(request.message)
+            model = genai.GenerativeModel('gemini-3.6-flash')
+            prompt = f"{system_prompt}\n\nUser Question: {request.message}"
+            response = model.generate_content(prompt)
             return {
                 "response": response.text.strip(),
                 "suggested_actions": [
@@ -1062,7 +1061,8 @@ def audit_copilot(request: CopilotRequest, db: Session = Depends(get_db), curren
                     "View recommended notice clauses"
                 ]
             }
-        except Exception:
+        except Exception as e:
+            print(f"Copilot Error: {e}")
             pass
             
     user_msg = request.message.lower()
@@ -1161,7 +1161,7 @@ def audit_rewrite(
 
     if HAS_GEMINI_KEY:
         try:
-            model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-1.5-flash"))
+            model = genai.GenerativeModel(os.getenv("GEMINI_MODEL", "gemini-3.6-flash"))
             response = model.generate_content(
                 system_prompt,
                 generation_config={"max_output_tokens": 600, "temperature": 0.3},

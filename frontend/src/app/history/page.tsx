@@ -28,6 +28,7 @@ export default function HistoryPage() {
   const [audits, setAudits] = useState<AuditHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const [deleteConfirmModal, setDeleteConfirmModal] = useState<{ id: number; companyName: string } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedIndustry, setSelectedIndustry] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState("ALL");
@@ -65,10 +66,13 @@ export default function HistoryPage() {
     fetchHistory();
   }, []);
 
-  const handleDeleteAudit = async (id: number, companyName: string) => {
-    if (!confirm(`Are you sure you want to delete the compliance audit for "${companyName}"? This action cannot be undone.`)) {
-      return;
-    }
+  const initiateDelete = (id: number, companyName: string) => {
+    setDeleteConfirmModal({ id, companyName });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirmModal) return;
+    const { id } = deleteConfirmModal;
     try {
       setDeletingId(id);
       await deleteAudit(id);
@@ -78,6 +82,7 @@ export default function HistoryPage() {
       alert("Failed to delete audit scan. Please try again.");
     } finally {
       setDeletingId(null);
+      setDeleteConfirmModal(null);
     }
   };
 
@@ -403,7 +408,7 @@ export default function HistoryPage() {
                           </button>
                           <button
                             type="button"
-                            onClick={() => handleDeleteAudit(audit.id, audit.company_name || "Enterprise Client")}
+                            onClick={() => initiateDelete(audit.id, audit.company_name || "Enterprise Client")}
                             disabled={deletingId === audit.id}
                             className="flex h-8 w-8 items-center justify-center rounded-lg border border-red-200 bg-red-50 text-red-600 transition hover:bg-red-100 disabled:opacity-50"
                             title="Delete Audit Scan"
@@ -443,6 +448,37 @@ export default function HistoryPage() {
               >
                 Next
                 <ChevronRight className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {deleteConfirmModal && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center bg-brand-deep/45 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-md space-y-5 rounded-2xl border border-brand-deep/10 bg-white p-6 shadow-2xl">
+            <div>
+              <h3 className="text-lg font-bold text-brand-deep">Delete Audit Scan</h3>
+              <p className="mt-2 text-sm text-brand-deep/70">
+                Are you sure you want to delete the compliance audit for <strong className="text-brand-deep">"{deleteConfirmModal.companyName}"</strong>? This action cannot be undone.
+              </p>
+            </div>
+            <div className="flex justify-end gap-3 pt-2">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmModal(null)}
+                className="rounded-xl px-4 py-2 text-sm font-semibold text-brand-deep/70 transition hover:bg-brand-deep/5"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDelete}
+                disabled={deletingId === deleteConfirmModal.id}
+                className="flex items-center justify-center rounded-xl bg-red-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-red-700 disabled:opacity-50"
+              >
+                {deletingId === deleteConfirmModal.id && <Loader2 className="h-4 w-4 animate-spin mr-2" />}
+                Delete Audit
               </button>
             </div>
           </div>

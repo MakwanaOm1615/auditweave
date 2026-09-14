@@ -45,7 +45,7 @@ export function AuthSidebar() {
       <div className="relative z-10 flex w-full max-w-[560px] flex-col justify-center">
         {/* Top Logo */}
         <div className="mb-8 flex items-center space-x-3 [@media(max-height:700px)]:mb-5">
-          <Image src="/axoreon-logo.png" alt="Axoreon" width={34} height={34} className="object-contain opacity-90" priority />
+          <Image src="/axoreon-logo.png" alt="Axoreon" width={36} height={36} className="object-contain opacity-90" priority />
           <div className="flex flex-col mt-1">
             <span className="font-serif font-black text-[24px] leading-[0.9] tracking-tight text-brand-cream">AuditWeave</span>
             <span className="text-[7.5px] font-extrabold text-[#3F9C7E] uppercase tracking-[0.22em] mt-1.5">POWERED BY AXOREON</span>

@@ -100,8 +100,6 @@ export default function RootLayout({
       <head>
         <title>AuditWeave | Powered by Axoreon</title>
         <meta name="description" content="AuditWeave — AI-powered DPDP Act 2023 compliance auditing platform by Axoreon. Automate privacy policy audits, consent management, and regulatory compliance." />
-        <link rel="icon" href="/axoreon-logo-square.png" type="image/png" />
-        <link rel="apple-touch-icon" href="/axoreon-logo-square.png" />
       </head>
       <body className="min-h-screen bg-brand-cream text-brand-deep antialiased">
         <Script src="https://checkout.razorpay.com/v1/checkout.js" strategy="afterInteractive" />
@@ -134,8 +132,8 @@ export default function RootLayout({
                   <Image
                     src="/axoreon-logo.png"
                     alt="AuditWeave"
-                    width={38}
-                    height={38}
+                    width={36}
+                    height={36}
                     className="h-9 w-9 shrink-0 object-contain"
                     priority
                   />

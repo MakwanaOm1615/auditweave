@@ -2,9 +2,9 @@ import { clearAuthSession, getStoredEmail, getStoredRole, getValidAccessToken, s
 import { parseAuthTokenResponse, parseRegisteredUserResponse, parseUserProfileResponse } from "./auth/types";
 import type { AuthTokenResponse, RegisteredUserResponse, UserProfileResponse } from "./auth/types";
 
-const configuredApiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8000").replace(/\/+$/, "");
+const configuredApiUrl = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/+$/, "");
 const API_BASE = `${configuredApiUrl.replace(/\/api$/, "")}/api`;
-const API_REQUEST_TIMEOUT_MS = 15_000;
+const API_REQUEST_TIMEOUT_MS = 60_000;
 
 // Helper to get headers
 function getHeaders(isMultipart = false) {
@@ -74,9 +74,12 @@ async function request<T>(endpoint: string, options: RequestInit = {}, isMultipa
   const url = `${API_BASE}${endpoint}`;
   const headers = getHeaders(isMultipart);
   
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), API_REQUEST_TIMEOUT_MS);
+  
   const mergedOptions = {
     ...options,
-    signal: options.signal ?? AbortSignal.timeout(API_REQUEST_TIMEOUT_MS),
+    signal: options.signal ?? controller.signal,
     headers: {
       ...headers,
       ...(options.headers || {}),
@@ -86,14 +89,17 @@ async function request<T>(endpoint: string, options: RequestInit = {}, isMultipa
   let res: Response;
   try {
     res = await fetch(url, mergedOptions);
-  } catch (error: unknown) {
-    if (error instanceof DOMException && error.name === "TimeoutError") {
-      throw new Error("The API service did not respond. Verify that the backend is running and try again.");
+  } catch (error: any) {
+    if (error.name === "AbortError" || (error instanceof DOMException && error.name === "TimeoutError")) {
+      throw new Error("The API service did not respond in time. Verify that the backend is running and try again.");
     }
     if (error instanceof TypeError) {
+      console.error("Fetch TypeError:", error);
       throw new Error("Unable to connect to the API service. Verify that the backend is running.");
     }
     throw error;
+  } finally {
+    clearTimeout(timeoutId);
   }
   if (!res.ok) {
     await throwResponseError(res);
