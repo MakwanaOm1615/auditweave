@@ -3,7 +3,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import { Sparkles, FileDown, Search, ArrowLeft, Send, AlertTriangle, Copy, BookOpen, Loader2, ChevronDown, Info } from "lucide-react";
+import { Sparkles, FileDown, Search, ArrowLeft, Send, AlertTriangle, Copy, BookOpen, Loader2, ChevronDown, Info, Lock } from "lucide-react";
 import { getAuditDetail, askCopilot, downloadAuditReport, downloadRemediatedPolicy, getRemediatedPolicyText, downloadFilledPolicy, getErrorMessage, rewriteClause } from "@/lib/api";
 
 interface AuditFinding {
@@ -33,7 +33,8 @@ interface AuditDetail {
   ai_confidence_score: number;
   ai_observations_count: number;
   policy_text?: string;
-  findings: AuditFinding[];
+  findings?: AuditFinding[];
+  is_summary_only?: boolean;
 }
 
 export default function AuditDetailsPage() {
@@ -466,8 +467,14 @@ export default function AuditDetailsPage() {
 
           <div
             ref={policyViewerRef}
-            className="max-h-[550px] flex-1 overflow-y-auto border-b border-brand-deep/[0.07] p-6"
+            className="max-h-[550px] flex-1 overflow-y-auto border-b border-brand-deep/[0.07] p-6 relative"
           >
+            {audit.is_summary_only && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/60 backdrop-blur-md text-center p-6 border-brand-green/20">
+                <Lock className="h-8 w-8 text-brand-green mb-3" />
+                <p className="text-sm font-bold text-brand-deep">Policy Navigator Locked</p>
+              </div>
+            )}
             {renderHighlightedPolicyText()}
           </div>
 
@@ -484,8 +491,23 @@ export default function AuditDetailsPage() {
             <p className="mt-0.5 text-xs text-brand-deep/55">Click any gap to inspect policy evidence and recommended changes.</p>
           </div>
 
-          <div className="space-y-4">
-            {audit.findings.map((f) => {
+          <div className="space-y-4 relative">
+            {audit.is_summary_only && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center rounded-2xl bg-white/60 backdrop-blur-md p-6 text-center shadow-lg border border-brand-green/20">
+                <Lock className="h-10 w-10 text-brand-green mb-4" />
+                <h3 className="text-xl font-bold text-brand-deep">Sign Up to View Findings</h3>
+                <p className="mt-2 text-sm text-brand-deep/70">
+                  You are viewing a high-level summary. Sign up to unlock detailed compliance gaps, AI observations, and instant remediation tools.
+                </p>
+                <Link
+                  href="/register"
+                  className="mt-6 inline-flex items-center justify-center rounded-xl bg-brand-green px-6 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#1f4f42]"
+                >
+                  Create Free Account
+                </Link>
+              </div>
+            )}
+            {audit.findings?.map((f) => {
               const active = selectedFinding?.id === f.id;
               return (
                 <div

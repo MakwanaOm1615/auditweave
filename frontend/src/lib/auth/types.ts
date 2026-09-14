@@ -3,6 +3,7 @@ export interface AuthTokenResponse {
   token_type: string;
   role: string;
   email: string;
+  credits_balance?: number;
 }
 
 export interface RegisteredUserResponse {
@@ -11,6 +12,7 @@ export interface RegisteredUserResponse {
   email: string;
   role: string;
   created_at: string;
+  credits_balance?: number;
 }
 
 export type UserProfileResponse = RegisteredUserResponse;

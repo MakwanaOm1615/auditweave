@@ -144,6 +144,17 @@ class AuditDetailResponse(AuditResponse):
     class Config:
         from_attributes = True
 
+class AuditSummaryResponse(BaseModel):
+    id: int
+    company_name: str
+    industry: str
+    compliance_score: float
+    status: str
+    is_summary_only: bool = True
+    
+    class Config:
+        from_attributes = True
+
 # Benchmark Schema
 class BenchmarkResponse(BaseModel):
     id: int

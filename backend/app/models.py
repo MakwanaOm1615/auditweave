@@ -11,10 +11,24 @@ class User(Base):
     email = Column(String, unique=True, index=True, nullable=False)
     password_hash = Column(String, nullable=False)
     role = Column(String, default="user") # user, admin, compliance_officer
-    credits_balance = Column(Integer, default=5) # New users get 5 free audits
+    credits_balance = Column(Integer, default=2) # New users get 2 free audits
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     credit_transactions = relationship("CreditTransaction", back_populates="user", cascade="all, delete-orphan")
+    payment_orders = relationship("PaymentOrder", back_populates="user", cascade="all, delete-orphan")
+
+class PaymentOrder(Base):
+    __tablename__ = "payment_orders"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
+    razorpay_order_id = Column(String, unique=True, index=True, nullable=False)
+    credits_purchased = Column(Integer, nullable=False)
+    amount_paid = Column(Integer, nullable=False) # In paise
+    status = Column(String, default="created") # created, verified, failed
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    
+    user = relationship("User", back_populates="payment_orders")
 
 class Company(Base):
     __tablename__ = "companies"

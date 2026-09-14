@@ -2,8 +2,8 @@ import datetime
 import logging
 import os
 import google.generativeai as genai
-from typing import List, Literal, Optional
-from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Query
+from typing import List, Literal, Optional, Union, Dict
+from fastapi import FastAPI, Depends, HTTPException, status, UploadFile, File, Form, Query, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import Response, StreamingResponse
 from sqlalchemy.orm import Session
@@ -13,7 +13,7 @@ from .database import engine, Base, get_db
 from .database import engine, Base, get_db
 from .models import User, Company, Policy, Audit, Finding, Benchmark, AuditLog, CreditTransaction
 from .schemas import (
-    UserCreate, UserLogin, UserResponse, Token, TokenData, AuditRequest, AuditDetailResponse,
+    UserCreate, UserLogin, UserResponse, Token, TokenData, AuditRequest, AuditDetailResponse, AuditSummaryResponse,
     AuditResponse, CompareRequest, RewriteRequest, RewriteResponse, CopilotRequest,
     CopilotResponse, BenchmarkResponse, BatchAuditRequest, ContactRequest, ContactResponse
 )
@@ -49,6 +49,26 @@ app = FastAPI(
     description="Enterprise GRC platform for DPDP Act 2023 compliance auditing",
     version="1.0.0"
 )
+
+# Simple IP-based rate limiting for anonymous audits (3 per day)
+anonymous_audit_rate_limits: Dict[str, List[datetime.datetime]] = {}
+
+def check_anonymous_rate_limit(request: Request):
+    client_ip = request.client.host if request.client else "unknown"
+    now = datetime.datetime.utcnow()
+    # clean up old limits
+    if client_ip in anonymous_audit_rate_limits:
+        anonymous_audit_rate_limits[client_ip] = [
+            t for t in anonymous_audit_rate_limits[client_ip]
+            if (now - t).total_seconds() < 86400
+        ]
+    else:
+        anonymous_audit_rate_limits[client_ip] = []
+        
+    if len(anonymous_audit_rate_limits[client_ip]) >= 3:
+        raise HTTPException(status_code=429, detail="Anonymous audit limit reached (3 per day). Please sign up to continue.")
+        
+    anonymous_audit_rate_limits[client_ip].append(now)
 
 # CORS configuration
 app.add_middleware(
@@ -267,8 +287,11 @@ def perform_compliance_audit(company_name: str, industry: str, policy_text: str,
     
     return audit
 
-@app.post("/api/audit", response_model=AuditDetailResponse)
-def audit_policy(request: AuditRequest, db: Session = Depends(get_db), current_user: Optional[User] = Depends(get_current_user_optional)):
+@app.post("/api/audit", response_model=Union[AuditSummaryResponse, AuditDetailResponse])
+def audit_policy(request: AuditRequest, req: Request, db: Session = Depends(get_db), current_user: Optional[User] = Depends(get_current_user_optional)):
+    if not current_user:
+        check_anonymous_rate_limit(req)
+        
     policy_text = ""
     
     if request.policy_url:
@@ -325,16 +348,36 @@ def audit_policy(request: AuditRequest, db: Session = Depends(get_db), current_u
     response_audit.company_industry = request.industry
     response_audit.policy_text = policy_text
     
-    return response_audit
+    if current_user:
+        return response_audit
+    else:
+        return AuditSummaryResponse(
+            id=audit.id,
+            company_name=request.company_name,
+            industry=request.industry,
+            compliance_score=audit.compliance_score,
+            status=audit.status,
+            is_summary_only=True
+        )
 
-@app.post("/api/audit/file", response_model=AuditDetailResponse)
+@app.post("/api/audit/file", response_model=Union[AuditSummaryResponse, AuditDetailResponse])
 def audit_policy_file(
+    req: Request,
     company_name: str = Form(...),
     industry: str = Form(...),
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: Optional[User] = Depends(get_current_user_optional)
 ):
+    if not current_user:
+        check_anonymous_rate_limit(req)
+        
+    if current_user and current_user.credits_balance <= 0:
+        raise HTTPException(
+            status_code=status.HTTP_402_PAYMENT_REQUIRED,
+            detail="Insufficient credits. Please purchase more credits to run an audit."
+        )
+
     filename = file.filename.lower()
     file_bytes = file.file.read()
     
@@ -387,7 +430,17 @@ def audit_policy_file(
     response_audit.company_industry = industry
     response_audit.policy_text = policy_text
     
-    return response_audit
+    if current_user:
+        return response_audit
+    else:
+        return AuditSummaryResponse(
+            id=audit.id,
+            company_name=company_name,
+            industry=industry,
+            compliance_score=audit.compliance_score,
+            status=audit.status,
+            is_summary_only=True
+        )
 
 
 @app.post("/api/audit/batch")
@@ -1243,7 +1296,14 @@ async def submit_contact_form(request: ContactRequest):
 # --- PAYMENTS (RAZORPAY) ---
 
 import uuid
+import razorpay
 from pydantic import BaseModel
+from .models import PaymentOrder
+
+RAZORPAY_KEY_ID = os.getenv("RAZORPAY_KEY_ID")
+RAZORPAY_KEY_SECRET = os.getenv("RAZORPAY_KEY_SECRET")
+
+razorpay_client = razorpay.Client(auth=(RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET)) if RAZORPAY_KEY_ID and RAZORPAY_KEY_SECRET else None
 
 class CreateOrderRequest(BaseModel):
     credits: int
@@ -1254,35 +1314,68 @@ class VerifyPaymentRequest(BaseModel):
     razorpay_signature: str
 
 @app.post("/api/payments/create-order")
-async def create_payment_order(request: CreateOrderRequest, current_user: User = Depends(get_current_user)):
-    """Placeholder for Razorpay order creation."""
-    # Pricing: ₹20 per audit credit
+async def create_payment_order(request: CreateOrderRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    """Razorpay order creation."""
     amount_inr = request.credits * 20
     amount_paise = amount_inr * 100
     
-    # Placeholder order ID
-    order_id = f"order_{uuid.uuid4().hex[:14]}"
-    
-    return {
-        "id": order_id,
-        "amount": amount_paise,
-        "currency": "INR"
-    }
+    if not razorpay_client:
+        raise HTTPException(status_code=500, detail="Razorpay is not configured on the server.")
+        
+    try:
+        order_data = razorpay_client.order.create({
+            "amount": amount_paise,
+            "currency": "INR",
+            "receipt": f"receipt_{uuid.uuid4().hex[:10]}"
+        })
+        order_id = order_data["id"]
+        
+        # Store the order in the database
+        payment_order = PaymentOrder(
+            user_id=current_user.id,
+            razorpay_order_id=order_id,
+            credits_purchased=request.credits,
+            amount_paid=amount_paise,
+            status="created"
+        )
+        db.add(payment_order)
+        db.commit()
+        
+        return order_data
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/payments/verify")
 async def verify_payment(request: VerifyPaymentRequest, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    """Placeholder for Razorpay payment verification."""
-    # In a real implementation, we would verify the HMAC signature here
+    """Razorpay payment verification."""
+    if not razorpay_client:
+        raise HTTPException(status_code=500, detail="Razorpay is not configured on the server.")
+        
+    payment_order = db.query(PaymentOrder).filter(PaymentOrder.razorpay_order_id == request.razorpay_order_id).first()
+    if not payment_order:
+        raise HTTPException(status_code=404, detail="Order not found")
+        
+    if payment_order.status == "verified":
+        raise HTTPException(status_code=400, detail="Order already verified")
+        
+    try:
+        razorpay_client.utility.verify_payment_signature({
+            'razorpay_order_id': request.razorpay_order_id,
+            'razorpay_payment_id': request.razorpay_payment_id,
+            'razorpay_signature': request.razorpay_signature
+        })
+    except razorpay.errors.SignatureVerificationError:
+        payment_order.status = "failed"
+        db.commit()
+        raise HTTPException(status_code=400, detail="Payment signature verification failed")
     
-    # We don't have the credit amount in the verify request normally, 
-    # but for this placeholder we'll grant a fixed 5 credits
-    credits_purchased = 5
+    payment_order.status = "verified"
     
-    current_user.credits_balance += credits_purchased
+    current_user.credits_balance += payment_order.credits_purchased
     
     tx = CreditTransaction(
         user_id=current_user.id,
-        amount=credits_purchased,
+        amount=payment_order.credits_purchased,
         transaction_type="purchase",
         reference_id=request.razorpay_payment_id
     )

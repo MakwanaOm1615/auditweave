@@ -194,8 +194,16 @@ export async function getCurrentUser(): Promise<UserProfileResponse> {
   return parseUserProfileResponse(raw);
 }
 
-async function requestBlob(endpoint: string): Promise<Blob> {
-  const res = await fetch(`${API_BASE}${endpoint}`, { headers: getHeaders(true) });
+async function requestBlob(endpoint: string, options: RequestInit = {}): Promise<Blob> {
+  const headers = getHeaders();
+  const mergedOptions = {
+    ...options,
+    headers: {
+      ...headers,
+      ...(options.headers || {}),
+    }
+  };
+  const res = await fetch(`${API_BASE}${endpoint}`, mergedOptions);
   if (!res.ok) await throwResponseError(res);
   return res.blob();
 }
